@@ -1,4 +1,8 @@
 import jinja2
+import base64
+import hashlib
+import hmac
+import secrets
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from workers import WorkerEntrypoint
@@ -7,6 +11,39 @@ environment = jinja2.Environment()
 template = environment.from_string("Hello, {{ name }}!")
 
 app = FastAPI()
+
+PBKDF2_ALGORITHM = "sha256"
+PBKDF2_ITERATIONS = 390000
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    derived_key = hashlib.pbkdf2_hmac(
+        PBKDF2_ALGORITHM,
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS,
+    )
+    encoded_key = base64.b64encode(derived_key).decode("utf-8")
+    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${encoded_key}"
+
+
+def verify_password(plain_password: str, stored_password: str) -> bool:
+    if stored_password.startswith("pbkdf2_sha256$"):
+        try:
+            _, iterations, salt, stored_key = stored_password.split("$", 3)
+            calculated_key = hashlib.pbkdf2_hmac(
+                PBKDF2_ALGORITHM,
+                plain_password.encode("utf-8"),
+                salt.encode("utf-8"),
+                int(iterations),
+            )
+            calculated_key_b64 = base64.b64encode(calculated_key).decode("utf-8")
+            return hmac.compare_digest(calculated_key_b64, stored_key)
+        except Exception:
+            return False
+
+    return hmac.compare_digest(plain_password, stored_password)
 
 
 class LoginRequest(BaseModel):
@@ -79,8 +116,17 @@ async def login(payload: LoginRequest, req: Request):
     if not result:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if result.contrasena != payload.contrasena:
+    if not verify_password(payload.contrasena, result.contrasena):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+    if not result.contrasena.startswith("pbkdf2_sha256$"):
+        try:
+            upgraded_hash = hash_password(payload.contrasena)
+            await db.prepare("UPDATE USUARIO SET contrasena = ? WHERE id = ?") \
+                .bind(upgraded_hash, result.id) \
+                .run()
+        except Exception:
+            pass
 
     return {
         "status": "ok",
