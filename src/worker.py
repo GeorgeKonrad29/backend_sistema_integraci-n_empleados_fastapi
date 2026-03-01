@@ -27,6 +27,20 @@ async def env(req: Request):
     return {"message": message}
 
 
+@app.get("/dataBase")
+async def get_database_tables(req: Request):
+    env = req.scope["env"]
+    db = env.dataBase
+    
+    try:
+        # Obtener todas las tablas de la base de datos
+        result = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
+        tables = [row["name"] for row in result.results]
+        return {"tables": tables, "count": len(tables)}
+    except Exception as e:
+        return {"error": str(e), "status": "error"}
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         import asgi
