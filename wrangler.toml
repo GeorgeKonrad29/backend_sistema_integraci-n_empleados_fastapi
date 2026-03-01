@@ -1,6 +1,7 @@
 name = "backend-empleados"
 type = "python"
 main = "main.py"
+compatibility_date = "2026-03-01"
 compatibility_flags = ["python_workers"]
 
 [env.production]
