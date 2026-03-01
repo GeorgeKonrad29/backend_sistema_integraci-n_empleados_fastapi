@@ -1,6 +1,7 @@
 name = "backend-empleados"
 type = "python"
 main = "main.py"
+compatibility_flags = ["python_workers"]
 
 [env.production]
 name = "backend-empleados-prod"
