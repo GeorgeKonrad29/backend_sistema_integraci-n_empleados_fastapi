@@ -1,1 +1,0 @@
-# Sin dependencias externas - usar solo librerías estándar de Python
