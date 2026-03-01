@@ -1,11 +1,19 @@
 # Estructura del Backend API
 
-Estructura profesional de FastAPI organizida según convenciones modernas de Python:
+Estructura profesional de FastAPI organizada con versionado explícito:
 
 ```
 src/
-├── worker.py              # Punto de entrada principal, ensamble de FastAPI
+├── worker.py             # Entry point de Cloudflare Worker
+├── main.py               # App FastAPI y montaje de versiones
 ├── __init__.py           # Inicializador del módulo
+│
+├── api/                  # Versiones de API
+│   ├── __init__.py
+│   └── v1/
+│       ├── __init__.py   # Router agregado de v1
+│       ├── auth.py       # Endpoints auth (/v1/auth/login)
+│       └── system.py     # Endpoints sistema (/v1/...)
 │
 ├── config/               # Configuración centralizada
 │   └── __init__.py      # Constantes y settings de la aplicación
@@ -17,11 +25,6 @@ src/
 ├── utils/                # Funciones utilitarias y helpers
 │   ├── __init__.py
 │   └── password.py      # Funciones de hash y verificación de contraseñas
-│
-└── routes/               # Endpoints y routers de FastAPI
-    ├── __init__.py      # Agrupa todos los routers
-    ├── auth.py          # Endpoints de autenticación (/auth/login)
-    └── system.py        # Endpoints de sistema (/, /hi, /env, /database/tables)
 ```
 
 ## Importaciones
@@ -41,15 +44,15 @@ from ..config import PBKDF2_ITERATIONS
 
 ## Agregar nuevos endpoints
 
-1. **Crear archivo en `routes/`** (ej: `routes/empleados.py`)
+1. **Crear archivo en `api/v1/`** (ej: `api/v1/empleados.py`)
 2. **Definir router y endpoints**
-3. **Importar en `routes/__init__.py`** e incluirlo en el main router
+3. **Importar en `api/v1/__init__.py`** e incluirlo en el router v1
 4. **Listo**, se auto-registran en FastAPI
 
 Ejemplo:
 
 ```python
-# routes/empleados.py
+# api/v1/empleados.py
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -60,7 +63,7 @@ async def list_empleados():
 ```
 
 ```python
-# routes/__init__.py - agregar
+# api/v1/__init__.py - agregar
 router.include_router(empleados.router, prefix="/empleados", tags=["Empleados"])
 ```
 

@@ -2,7 +2,11 @@ import base64
 import hashlib
 import hmac
 import secrets
-from ..config import PBKDF2_ALGORITHM, PBKDF2_ITERATIONS
+
+try:
+    from config import PBKDF2_ALGORITHM, PBKDF2_ITERATIONS
+except ImportError:
+    from ..config import PBKDF2_ALGORITHM, PBKDF2_ITERATIONS
 
 
 def hash_password(password: str) -> str:
