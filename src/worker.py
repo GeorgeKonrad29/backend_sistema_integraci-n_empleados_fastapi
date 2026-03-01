@@ -35,7 +35,7 @@ async def get_database_tables(req: Request):
     try:
         # Obtener todas las tablas de la base de datos
         result = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
-        tables = [row["name"] for row in result.results]
+        tables = [row.name for row in result.results]
         return {"tables": tables, "count": len(tables)}
     except Exception as e:
         return {"error": str(e), "status": "error"}
