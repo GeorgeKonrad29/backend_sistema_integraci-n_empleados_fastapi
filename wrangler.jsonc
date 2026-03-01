@@ -10,6 +10,13 @@
 	"vars": {
 		"MESSAGE": "My env var"
 	},
+	"d1_databases": [
+		{
+			"binding": "dataBase",
+			"database_name": "integracion_empleados_data_base",
+			"database_id": "96602da8-f6bb-4cc1-805f-d47f96f09565"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}
