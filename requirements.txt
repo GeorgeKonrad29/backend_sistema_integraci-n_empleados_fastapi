@@ -1,2 +1,1 @@
-fastapi==0.104.1
-uvicorn==0.24.0
+# Sin dependencias externas - usar solo librerías estándar de Python
