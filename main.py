@@ -1,33 +1,40 @@
-import json
+from workers import WorkerEntrypoint
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+import asgi
 
-async def on_fetch(request):
-    """Manejador principal para Cloudflare Workers"""
-    url = request.url
-    path = url.split("?")[0].split("/")[-1] or "/"
-    
-    if path == "/":
-        return Response(
-            json.dumps({"message": "Hola mundo desde Cloudflare Workers"}),
-            headers={"Content-Type": "application/json"}
-        )
-    elif path == "health":
-        return Response(
-            json.dumps({"status": "ok"}),
-            headers={"Content-Type": "application/json"}
-        )
-    else:
-        return Response(
-            json.dumps({"error": "Not found"}),
-            status=404,
-            headers={"Content-Type": "application/json"}
-        )
+class Default(WorkerEntrypoint):
+    async def fetch(self, request):
+        return await asgi.fetch(app, request, self.env)
 
-class Response:
-    def __init__(self, body, status=200, headers=None):
-        self.body = body
-        self.status = status
-        self.headers = headers or {"Content-Type": "application/json"}
-    
-    def __iter__(self):
-        yield (self.status, self.headers)
-        yield self.body.encode() if isinstance(self.body, str) else self.body
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return {"message": "Hello, World!"}
+
+@app.get("/env")
+async def root(req: Request):
+    env = req.scope["env"]
+    return {"message": "Here is an example of getting an environment variable: " + env.MESSAGE}
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+
+@app.put("/items/{item_id}")
+async def create_item(item_id: int, item: Item, q: str | None = None):
+    result = {"item_id": item_id, **item.dict()}
+    if q:
+        result.update({"q": q})
+    return result
+
+@app.get("/items/{item_id}")
+async def read_item(item_id: int):
+    return {"item_id": item_id}
