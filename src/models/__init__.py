@@ -1,4 +1,12 @@
-from .auth import LoginRequest, LoginUser, LoginResponse, SignupRequest, SignupResponse
+from .auth import (
+    ActivatePasswordRequest,
+    ActivatePasswordResponse,
+    LoginRequest,
+    LoginResponse,
+    LoginUser,
+    SignupRequest,
+    SignupResponse,
+)
 
 __all__ = [
     "LoginRequest",
@@ -6,4 +14,6 @@ __all__ = [
     "LoginResponse",
     "SignupRequest",
     "SignupResponse",
+    "ActivatePasswordRequest",
+    "ActivatePasswordResponse",
 ]

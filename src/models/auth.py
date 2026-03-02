@@ -25,7 +25,6 @@ class LoginResponse(BaseModel):
 class SignupRequest(BaseModel):
     """Modelo para solicitud de registro"""
     correo: str
-    contrasena: str
     nombre: str
     rol: int | None = 0
 
@@ -35,3 +34,17 @@ class SignupResponse(BaseModel):
     status: str
     message: str
     user: LoginUser
+    activation_link: str
+    email_sent: bool = False
+
+
+class ActivatePasswordRequest(BaseModel):
+    """Modelo para activar cuenta definiendo contraseña"""
+    token: str
+    contrasena: str
+
+
+class ActivatePasswordResponse(BaseModel):
+    """Modelo de respuesta de activación"""
+    status: str
+    message: str
