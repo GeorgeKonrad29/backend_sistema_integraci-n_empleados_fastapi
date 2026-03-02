@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request
 
 try:
-    from models import LoginRequest, LoginResponse
+    from models import LoginRequest, LoginResponse, SignupRequest, SignupResponse
     from utils import hash_password, verify_password
 except ImportError:
-    from ...models import LoginRequest, LoginResponse
+    from ...models import LoginRequest, LoginResponse, SignupRequest, SignupResponse
     from ...utils import hash_password, verify_password
 
 router = APIRouter()
@@ -12,15 +12,11 @@ router = APIRouter()
 
 @router.post("/login", response_model=LoginResponse)
 async def login(payload: LoginRequest, req: Request):
+    """
+    Endpoint de login. Valida credenciales contra tabla USUARIO.
+    """
     env = req.scope["env"]
     db = env.dataBase
-    password_pepper = getattr(env, "PASSWORD_PEPPER", None)
-
-    if not password_pepper:
-        raise HTTPException(
-            status_code=500,
-            detail="Secret PASSWORD_PEPPER no está configurado en Cloudflare",
-        )
 
     try:
         result = (
@@ -38,17 +34,8 @@ async def login(payload: LoginRequest, req: Request):
     if not result:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if not verify_password(payload.contrasena, result.contrasena, password_pepper):
+    if not verify_password(payload.contrasena, result.contrasena):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
-
-    if not result.contrasena.startswith("pbkdf2_sha256_peppered$"):
-        try:
-            upgraded_hash = hash_password(payload.contrasena, password_pepper)
-            await db.prepare("UPDATE USUARIO SET contrasena = ? WHERE id = ?").bind(
-                upgraded_hash, result.id
-            ).run()
-        except Exception:
-            pass
 
     return {
         "status": "ok",
@@ -60,3 +47,59 @@ async def login(payload: LoginRequest, req: Request):
             "nombre": result.nombre,
         },
     }
+
+
+@router.post("/signup", response_model=SignupResponse)
+async def signup(payload: SignupRequest, req: Request):
+    """
+    Endpoint de registro. Crea un nuevo usuario con contraseña hasheada.
+    """
+    env = req.scope["env"]
+    db = env.dataBase
+
+    # Validar que el email no exista
+    try:
+        existing = (
+            await db.prepare("SELECT id FROM USUARIO WHERE correo = ? LIMIT 1")
+            .bind(payload.correo)
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail="El email ya está registrado")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error consultando la base de datos: {e}"
+        )
+
+    # Hash la contraseña
+    password_hash = hash_password(payload.contrasena)
+
+    # Insertar usuario
+    try:
+        result = await db.prepare(
+            "INSERT INTO USUARIO (correo, contrasena, nombre, rol) VALUES (?, ?, ?, ?) RETURNING id"
+        ).bind(payload.correo, password_hash, payload.nombre, payload.rol or 0).first()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al crear el usuario: {e}",
+        )
+
+    if not result:
+        raise HTTPException(
+            status_code=500, detail="No se pudo crear el usuario"
+        )
+
+    return {
+        "status": "ok",
+        "message": "Usuario registrado exitosamente",
+        "user": {
+            "id": result.id,
+            "correo": payload.correo,
+            "rol": payload.rol,
+            "nombre": payload.nombre,
+        },
+    }
+

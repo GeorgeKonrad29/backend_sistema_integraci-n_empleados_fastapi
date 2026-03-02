@@ -20,3 +20,18 @@ class LoginResponse(BaseModel):
     status: str
     message: str
     user: LoginUser
+
+
+class SignupRequest(BaseModel):
+    """Modelo para solicitud de registro"""
+    correo: str
+    contrasena: str
+    nombre: str
+    rol: int | None = 0
+
+
+class SignupResponse(BaseModel):
+    """Modelo de respuesta de registro"""
+    status: str
+    message: str
+    user: LoginUser

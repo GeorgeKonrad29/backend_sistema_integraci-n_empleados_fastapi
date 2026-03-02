@@ -1,3 +1,9 @@
-from .auth import LoginRequest, LoginUser, LoginResponse
+from .auth import LoginRequest, LoginUser, LoginResponse, SignupRequest, SignupResponse
 
-__all__ = ["LoginRequest", "LoginUser", "LoginResponse"]
+__all__ = [
+    "LoginRequest",
+    "LoginUser",
+    "LoginResponse",
+    "SignupRequest",
+    "SignupResponse",
+]
