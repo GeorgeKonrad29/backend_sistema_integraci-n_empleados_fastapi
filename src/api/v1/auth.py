@@ -14,6 +14,13 @@ router = APIRouter()
 async def login(payload: LoginRequest, req: Request):
     env = req.scope["env"]
     db = env.dataBase
+    password_pepper = getattr(env, "PASSWORD_PEPPER", None)
+
+    if not password_pepper:
+        raise HTTPException(
+            status_code=500,
+            detail="Secret PASSWORD_PEPPER no está configurado en Cloudflare",
+        )
 
     try:
         result = (
@@ -31,12 +38,12 @@ async def login(payload: LoginRequest, req: Request):
     if not result:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if not verify_password(payload.contrasena, result.contrasena):
+    if not verify_password(payload.contrasena, result.contrasena, password_pepper):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if not result.contrasena.startswith("pbkdf2_sha256$"):
+    if not result.contrasena.startswith("pbkdf2_sha256_peppered$"):
         try:
-            upgraded_hash = hash_password(payload.contrasena)
+            upgraded_hash = hash_password(payload.contrasena, password_pepper)
             await db.prepare("UPDATE USUARIO SET contrasena = ? WHERE id = ?").bind(
                 upgraded_hash, result.id
             ).run()
