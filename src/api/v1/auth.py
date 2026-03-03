@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from utils.resend import fetch as fetch_resend_api_key
 import json
 import secrets
 import time
@@ -30,7 +31,7 @@ except ImportError:
 router = APIRouter()
 
 ACTIVATION_TOKEN_TTL_SECONDS = 3600
-RESEND_API_KEY = "re_DgiYnmhb_98A9DPf6uQqtHiHLNmuCaKEj"
+RESEND_API_KEY = fetch_resend_api_key
 RESEND_FROM_EMAIL = "onboarding@resend.dev"
 
 
