@@ -19,5 +19,12 @@
 	],
 	"observability": {
 		"enabled": true
-	}
+	},
+	"secrets_store_secrets": [
+		{
+		"binding": "resend",
+		"store_id": "29806d0257da4c6e996ae6340e9153c2",
+		"secret_name": "emailresend"
+		}
+	]
 }
