@@ -10,19 +10,23 @@ in `wrangler.jsonc` to run the example.
 
 You can also run `uv run pywrangler deploy` to deploy the example.
 
-## Cloudflare Secret for Password Hash
+## Signup con Email (sin secrets)
 
-This API expects a Cloudflare secret named `PASSWORD_PEPPER`.
-It is used as a server-side pepper for password hashing/verification.
+El envío de correo para activación está en `src/api/v1/auth.py`.
 
-Set it in your Worker environment:
+Debes reemplazar estas constantes directamente en código:
 
-```bash
-npx wrangler secret put PASSWORD_PEPPER
+```python
+RESEND_API_KEY = "REEMPLAZA_CON_TU_API_KEY_DE_RESEND"
+RESEND_FROM_EMAIL = "onboarding@resend.dev"
 ```
 
-If you use `pywrangler`, you can also run:
+Luego despliega:
 
 ```bash
-uv run pywrangler secret put PASSWORD_PEPPER
+uv run pywrangler deploy
 ```
+
+Endpoints:
+- `POST /v1/auth/signup` (crea usuario y manda correo de activación)
+- `POST /v1/auth/activate-password` (activa contraseña con token)
