@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from utils.resend import fetch as fetch_resend_api_key
 import json
 import secrets
 import time
+
+try:
+    from utils.resend import fetch as fetch_resend_api_key
+except ImportError:
+    from ...utils.resend import fetch as fetch_resend_api_key
 
 try:
     from models import (
@@ -31,7 +35,6 @@ except ImportError:
 router = APIRouter()
 
 ACTIVATION_TOKEN_TTL_SECONDS = 3600
-RESEND_API_KEY = fetch_resend_api_key
 RESEND_FROM_EMAIL = "onboarding@resend.dev"
 
 
@@ -51,8 +54,15 @@ async def ensure_activation_table(db):
     ).run()
 
 
-async def send_activation_email(to_email: str, user_name: str, activation_link: str) -> bool:
-    if not RESEND_API_KEY or not RESEND_FROM_EMAIL:
+async def send_activation_email(to_email: str, user_name: str, activation_link: str, req: Request) -> bool:
+    # Get API key from Cloudflare Secrets
+    try:
+        env = req.scope["env"]
+        resend_api_key = await fetch_resend_api_key(req, env)
+    except Exception:
+        return False
+    
+    if not resend_api_key or not RESEND_FROM_EMAIL:
         return False
 
     try:
@@ -77,7 +87,7 @@ async def send_activation_email(to_email: str, user_name: str, activation_link: 
             "https://api.resend.com/emails",
             method="POST",
             headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Authorization": f"Bearer {resend_api_key}",
                 "Content-Type": "application/json",
             },
             body=json.dumps(email_payload),
@@ -182,7 +192,7 @@ async def signup(payload: SignupRequest, req: Request):
         )
 
     activation_link = f"{req.base_url}v1/auth/activate-password?token={token}"
-    email_sent = await send_activation_email(payload.correo, payload.nombre, activation_link)
+    email_sent = await send_activation_email(payload.correo, payload.nombre, activation_link, req)
     response_message = "Usuario creado. Revisa tu correo para activar la cuenta."
     if not email_sent:
         response_message = "Usuario creado. Correo no enviado, usa activation_link."
