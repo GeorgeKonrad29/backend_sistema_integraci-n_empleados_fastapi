@@ -17,7 +17,7 @@ El envío de correo para activación está en `src/api/v1/auth.py`.
 Debes reemplazar estas constantes directamente en código:
 
 ```python
-RESEND_API_KEY = "REEMPLAZA_CON_TU_API_KEY_DE_RESEND"
+RESEND_API_KEY = "re_DgiYnmhb_98A9DPf6uQqtHiHLNmuCaKEj"
 RESEND_FROM_EMAIL = "onboarding@resend.dev"
 ```
 

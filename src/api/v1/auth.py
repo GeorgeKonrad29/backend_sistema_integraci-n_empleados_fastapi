@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+import json
 import secrets
 import time
 
@@ -26,6 +27,8 @@ except ImportError:
 router = APIRouter()
 
 ACTIVATION_TOKEN_TTL_SECONDS = 3600
+RESEND_API_KEY = "re_DgiYnmhb_98A9DPf6uQqtHiHLNmuCaKEj"
+RESEND_FROM_EMAIL = "onboarding@resend.dev"
 
 
 async def ensure_activation_table(db):
@@ -42,6 +45,42 @@ async def ensure_activation_table(db):
         )
         """
     ).run()
+
+
+async def send_activation_email(to_email: str, user_name: str, activation_link: str) -> bool:
+    if not RESEND_API_KEY or not RESEND_FROM_EMAIL:
+        return False
+
+    try:
+        from pyodide.http import pyfetch
+    except Exception:
+        return False
+
+    email_payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [to_email],
+        "subject": "Activa tu cuenta",
+        "html": (
+            f"<p>Hola {user_name},</p>"
+            "<p>Tu cuenta fue creada correctamente.</p>"
+            f"<p>Activa tu contraseña aquí: <a href=\"{activation_link}\">Activar cuenta</a></p>"
+            "<p>Este enlace expira en 1 hora.</p>"
+        ),
+    }
+
+    try:
+        response = await pyfetch(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(email_payload),
+        )
+        return response.status in [200, 201, 202]
+    except Exception:
+        return False
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -139,10 +178,14 @@ async def signup(payload: SignupRequest, req: Request):
         )
 
     activation_link = f"{req.base_url}v1/auth/activate-password?token={token}"
+    email_sent = await send_activation_email(payload.correo, payload.nombre, activation_link)
+    response_message = "Usuario creado. Revisa tu correo para activar la cuenta."
+    if not email_sent:
+        response_message = "Usuario creado. Correo no enviado, usa activation_link."
 
     return {
         "status": "ok",
-        "message": "Usuario creado. Debe activar su contraseña con el enlace.",
+        "message": response_message,
         "user": {
             "id": created_user.id,
             "correo": payload.correo,
@@ -150,7 +193,7 @@ async def signup(payload: SignupRequest, req: Request):
             "nombre": payload.nombre,
         },
         "activation_link": activation_link,
-        "email_sent": False,
+        "email_sent": email_sent,
     }
 
 
