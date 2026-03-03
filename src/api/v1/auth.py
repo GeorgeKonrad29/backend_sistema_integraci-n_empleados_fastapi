@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
 import json
 import secrets
 import time
@@ -195,6 +196,57 @@ async def signup(payload: SignupRequest, req: Request):
         "activation_link": activation_link,
         "email_sent": email_sent,
     }
+
+
+@router.get("/activate-password", response_class=HTMLResponse)
+async def activate_password_form(token: str = ""):
+    if not token:
+        return "<h3>Token inválido</h3><p>Falta el token de activación.</p>"
+
+    return f"""
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset=\"utf-8\" />
+        <title>Activar contraseña</title>
+      </head>
+      <body style=\"font-family: Arial, sans-serif; max-width: 480px; margin: 40px auto;\">
+        <h2>Activa tu cuenta</h2>
+        <p>Define tu nueva contraseña:</p>
+        <form id=\"activate-form\">
+          <input type=\"password\" id=\"password\" placeholder=\"Nueva contraseña\" required style=\"width:100%;padding:10px;margin:8px 0;\" />
+          <button type=\"submit\" style=\"padding:10px 16px;\">Activar</button>
+        </form>
+        <p id=\"msg\" style=\"margin-top:16px;\"></p>
+
+        <script>
+          const form = document.getElementById('activate-form');
+          const msg = document.getElementById('msg');
+          const token = {json.dumps(token)};
+
+          form.addEventListener('submit', async (e) => {{
+            e.preventDefault();
+            const contrasena = document.getElementById('password').value;
+
+            const res = await fetch('/v1/auth/activate-password', {{
+              method: 'POST',
+              headers: {{ 'Content-Type': 'application/json' }},
+              body: JSON.stringify({{ token, contrasena }})
+            }});
+
+            const data = await res.json();
+            if (res.ok) {{
+              msg.style.color = 'green';
+              msg.textContent = data.message || 'Cuenta activada correctamente';
+            }} else {{
+              msg.style.color = 'red';
+              msg.textContent = data.detail || 'No se pudo activar la cuenta';
+            }}
+          }});
+        </script>
+      </body>
+    </html>
+    """
 
 
 @router.post("/activate-password", response_model=ActivatePasswordResponse)
