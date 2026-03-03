@@ -48,7 +48,7 @@ async def ensure_activation_table(db):
             expires_at INTEGER NOT NULL,
             used INTEGER NOT NULL DEFAULT 0,
             created_at INTEGER NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES USUARIO(id)
+            FOREIGN KEY (user_id) REFERENCES USUARIO(ID)
         )
         """
     ).run()
@@ -108,7 +108,7 @@ async def login(payload: LoginRequest, req: Request):
     try:
         result = (
             await db.prepare(
-                "SELECT id, correo, contrasena, rol, nombre FROM USUARIO WHERE correo = ? LIMIT 1"
+                "SELECT ID, Correo, Contrasena, rol_sistema, nombre FROM USUARIO WHERE Correo = ? LIMIT 1"
             )
             .bind(payload.correo)
             .first()
@@ -121,16 +121,16 @@ async def login(payload: LoginRequest, req: Request):
     if not result:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if not verify_password(payload.contrasena, result.contrasena):
+    if not verify_password(payload.contrasena, result.Contrasena):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
     return {
         "status": "ok",
         "message": "Login exitoso",
         "user": {
-            "id": result.id,
-            "correo": result.correo,
-            "rol": result.rol,
+            "ID": result.ID,
+            "Correo": result.Correo,
+            "rol_sistema": result.rol_sistema,
             "nombre": result.nombre,
         },
     }
@@ -149,7 +149,7 @@ async def signup(payload: SignupRequest, req: Request):
     # Validar que el email no exista
     try:
         existing = (
-            await db.prepare("SELECT id FROM USUARIO WHERE correo = ? LIMIT 1")
+            await db.prepare("SELECT ID FROM USUARIO WHERE Correo = ? LIMIT 1")
             .bind(payload.correo)
             .first()
         )
@@ -166,8 +166,8 @@ async def signup(payload: SignupRequest, req: Request):
 
     try:
         created_user = await db.prepare(
-            "INSERT INTO USUARIO (correo, contrasena, nombre, rol) VALUES (?, ?, ?, ?) RETURNING id"
-        ).bind(payload.correo, placeholder_password, payload.nombre, payload.rol or 0).first()
+            "INSERT INTO USUARIO (Correo, Contrasena, nombre, rol_sistema) VALUES (?, ?, ?, ?) RETURNING ID"
+        ).bind(payload.correo, placeholder_password, payload.nombre, payload.rol_sistema or 'Operador').first()
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -184,7 +184,7 @@ async def signup(payload: SignupRequest, req: Request):
     try:
         await db.prepare(
             "INSERT OR REPLACE INTO ACTIVACION_USUARIO (user_id, token, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)"
-        ).bind(created_user.id, token, expires_at, now_ts).run()
+        ).bind(created_user.ID, token, expires_at, now_ts).run()
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -201,9 +201,9 @@ async def signup(payload: SignupRequest, req: Request):
         "status": "ok",
         "message": response_message,
         "user": {
-            "id": created_user.id,
-            "correo": payload.correo,
-            "rol": payload.rol,
+            "ID": created_user.ID,
+            "Correo": payload.correo,
+            "rol_sistema": payload.rol_sistema,
             "nombre": payload.nombre,
         },
         "activation_link": activation_link,
@@ -251,7 +251,7 @@ async def activate_password(payload: ActivatePasswordRequest, req: Request):
     password_hash = hash_password(payload.contrasena)
 
     try:
-        await db.prepare("UPDATE USUARIO SET contrasena = ? WHERE id = ?").bind(
+        await db.prepare("UPDATE USUARIO SET Contrasena = ? WHERE ID = ?").bind(
             password_hash, activation.user_id
         ).run()
         await db.prepare("UPDATE ACTIVACION_USUARIO SET used = 1 WHERE token = ?").bind(

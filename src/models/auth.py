@@ -9,9 +9,9 @@ class LoginRequest(BaseModel):
 
 class LoginUser(BaseModel):
     """Modelo de usuario retornado en respuesta"""
-    id: int
-    correo: str
-    rol: int | None = None
+    ID: int
+    Correo: str
+    rol_sistema: str | None = None
     nombre: str
 
 
@@ -26,7 +26,7 @@ class SignupRequest(BaseModel):
     """Modelo para solicitud de registro"""
     correo: str
     nombre: str
-    rol: int | None = 0
+    rol_sistema: str | None = 'Operador'
 
 
 class SignupResponse(BaseModel):
