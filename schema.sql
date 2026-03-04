@@ -1,11 +1,12 @@
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
 
 -- Limpieza de tablas para pruebas (Opcional, comentar en producción)
--- DROP TABLE IF EXISTS HISTORIAL;
--- DROP TABLE IF EXISTS SOLICITUDES;
--- DROP TABLE IF EXISTS PUESTO_TRABAJO;
--- DROP TABLE IF EXISTS USUARIO;
--- DROP TABLE IF EXISTS CARGOS;
+DROP TABLE IF EXISTS HISTORIAL;
+DROP TABLE IF EXISTS SOLICITUDES;
+DROP TABLE IF EXISTS PUESTO_TRABAJO;
+DROP TABLE IF EXISTS ACTIVACION_USUARIO;
+DROP TABLE IF EXISTS USUARIO;
+DROP TABLE IF EXISTS CARGOS;
 
 -- 1. Estructura Organizacional
 CREATE TABLE CARGOS (
@@ -64,9 +65,26 @@ CREATE TABLE HISTORIAL (
 ---
 -- AUTOMATIZACIÓN: Trigger para el historial
 ---
+CREATE TRIGGER IF NOT EXISTS trg_log_solicitud_insercion
+AFTER INSERT ON SOLICITUDES
+BEGIN
+    INSERT INTO HISTORIAL (id_solicitud, estado_antiguo, nuevo_estado, comentario)
+    VALUES (NEW.id, NULL, NEW.estado, 'Solicitud creada');
+END;
+
 CREATE TRIGGER IF NOT EXISTS trg_actualizar_historial
 AFTER UPDATE OF estado ON SOLICITUDES
 BEGIN
     INSERT INTO HISTORIAL (id_solicitud, estado_antiguo, nuevo_estado, comentario)
-    VALUES (OLD.id, OLD.estado, NEW.estado, 'Cambio de estado automático');
+    VALUES (OLD.id, OLD.estado, NEW.estado, 'Cambio de estado');
 END;
+
+CREATE TRIGGER IF NOT EXISTS trg_set_fecha_fin
+AFTER UPDATE OF estado ON SOLICITUDES
+FOR EACH ROW
+WHEN NEW.estado = 'Finalizado' AND OLD.estado != 'Finalizado'
+BEGIN
+    UPDATE SOLICITUDES SET fecha_fin = datetime('now') WHERE id = NEW.id;
+END;
+
+PRAGMA foreign_keys = ON;

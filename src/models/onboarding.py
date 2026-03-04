@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class EstadoSolicitud(str, Enum):
     PENDIENTE = "Pendiente"
     EN_PROCESO = "En Proceso"
-    FINALIZADA = "Finalizada"
+    FINALIZADO = "Finalizado"
 
 
 class OnboardingRequest(BaseModel):
