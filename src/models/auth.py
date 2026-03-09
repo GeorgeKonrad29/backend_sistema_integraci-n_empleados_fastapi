@@ -20,6 +20,9 @@ class LoginResponse(BaseModel):
     status: str
     message: str
     user: LoginUser
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
 
 
 class SignupRequest(BaseModel):
