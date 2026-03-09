@@ -20,7 +20,7 @@ async def create_onboarding_request(payload: OnboardingRequest, req: Request):
 
     try:
         # Verificar si el empleado existe
-        user_check = await db.prepare("SELECT ID FROM USUARIO WHERE ID = ?").bind(payload.id_empleado).first()
+        user_check = await db.prepare("SELECT id FROM USUARIO WHERE id = ?").bind(payload.id_empleado).first()
         
         if not user_check:
             raise HTTPException(
@@ -31,18 +31,21 @@ async def create_onboarding_request(payload: OnboardingRequest, req: Request):
         query = """
             INSERT INTO SOLICITUDES (
                 id_empleado, 
-                id_area_encargada, 
-                fecha_maxima_cumplimiento, 
-                especificaciones
-            ) VALUES (?, ?, ?, ?)
+                fecha_creacion,
+                fecha_fin,
+                estado,
+                especificaciones,
+                destinatario
+            ) VALUES (?, datetime('now'), ?, ?, ?, ?)
             RETURNING *
         """
         
         result = await db.prepare(query).bind(
             payload.id_empleado,
-            payload.id_area_encargada,
-            payload.fecha_maxima_cumplimiento.isoformat(),
-            payload.especificaciones
+            payload.fecha_fin.isoformat(),
+            payload.estado.value,
+            payload.especificaciones,
+            payload.destinatario
         ).first()
 
         if not result:
@@ -59,12 +62,11 @@ async def create_onboarding_request(payload: OnboardingRequest, req: Request):
                 result_dict = {
                     "id": result.id,
                     "id_empleado": result.id_empleado,
-                    "id_area_encargada": result.id_area_encargada,
                     "fecha_creacion": result.fecha_creacion,
-                    "fecha_maxima_cumplimiento": result.fecha_maxima_cumplimiento,
                     "fecha_fin": result.fecha_fin,
                     "estado": result.estado,
-                    "especificaciones": result.especificaciones
+                    "especificaciones": result.especificaciones,
+                    "destinatario": result.destinatario,
                 }
         except Exception as conv_err:
             raise HTTPException(
@@ -115,12 +117,11 @@ async def list_onboarding_requests(req: Request):
                 row_dict = {
                     "id": row.id,
                     "id_empleado": row.id_empleado,
-                    "id_area_encargada": row.id_area_encargada,
                     "fecha_creacion": row.fecha_creacion,
-                    "fecha_maxima_cumplimiento": row.fecha_maxima_cumplimiento,
                     "fecha_fin": row.fecha_fin,
                     "estado": row.estado,
-                    "especificaciones": row.especificaciones
+                    "especificaciones": row.especificaciones,
+                    "destinatario": row.destinatario,
                 }
             
             # Limpiamos los JsNull (ej: "jsnull" o None real)
