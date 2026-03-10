@@ -1,73 +1,20 @@
-from typing import Annotated
-from fastapi import APIRouter, HTTPException, Request, Header
+from fastapi import APIRouter, HTTPException, Request, Security
 
 try:
     from models.onboarding import OnboardingRequest, OnboardingResponse
-    from utils import decode_access_token
+    from utils import require_admin_cargo
 except ImportError:
     from ...models.onboarding import OnboardingRequest, OnboardingResponse
-    from ...utils import decode_access_token
-
-ALLOWED_ROLES = [1, 7, 24]  # IDs de cargo permitidos
+    from ...utils import require_admin_cargo
 
 router = APIRouter(tags=["onboarding"])
 
 
-async def get_jwt_secret(req: Request) -> str:
-    env = req.scope["env"]
-
-    jwt_secret = getattr(env, "JWT_SECRET", None)
-    if isinstance(jwt_secret, str) and jwt_secret.strip():
-        return jwt_secret
-
-    secret_binding = getattr(env, "jwt_secret", None)
-    if secret_binding and hasattr(secret_binding, "get"):
-        fetched_secret = await secret_binding.get()
-        if fetched_secret and str(fetched_secret).strip():
-            return str(fetched_secret)
-
-    raise HTTPException(
-        status_code=500,
-        detail="JWT secret no configurado en el entorno.",
-    )
-
-
-async def validate_jwt_and_cargo(authorization: str | None, req: Request) -> dict:
-    """
-    Valida JWT y verifica que el usuario tenga uno de los cargos permitidos.
-    Retorna el payload decodificado.
-    """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Falta header Authorization")
-
-    auth_parts = authorization.split(" ", 1)
-    if len(auth_parts) != 2 or auth_parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Formato de Authorization inválido")
-
-    token = auth_parts[1]
-    jwt_secret = await get_jwt_secret(req)
-
-    try:
-        payload = decode_access_token(token, jwt_secret)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
-
-    user_cargo = payload.get("cargo")
-    if user_cargo not in ALLOWED_ROLES:
-        raise HTTPException(
-            status_code=403,
-            detail=f"No tiene permisos. Solo usuarios con cargo {ALLOWED_ROLES} pueden acceder."
-        )
-
-    return payload
-
-
 @router.post("/", response_model=OnboardingResponse)
-async def create_onboarding_request(payload: OnboardingRequest, req: Request, authorization: str | None = Header(default=None)):
+async def create_onboarding_request(payload: OnboardingRequest, req: Request, token_payload: dict = Security(require_admin_cargo)):
     """
     Crea una nueva solicitud de onboarding. Protegido. Solo usuarios con cargo 1, 7 o 24.
     """
-    jwt_payload = await validate_jwt_and_cargo(authorization, req)
     env = req.scope["env"]
     db = env.dataBase
 
@@ -148,11 +95,10 @@ async def create_onboarding_request(payload: OnboardingRequest, req: Request, au
 
 
 @router.get("/", response_model=list[OnboardingResponse])
-async def list_onboarding_requests(req: Request, authorization: str | None = Header(default=None)):
+async def list_onboarding_requests(req: Request, token_payload: dict = Security(require_admin_cargo)):
     """
     Lista todas las solicitudes de onboarding. Protegido. Solo usuarios con cargo 1, 7 o 24.
     """
-    jwt_payload = await validate_jwt_and_cargo(authorization, req)
     env = req.scope["env"]
     db = env.dataBase
 
