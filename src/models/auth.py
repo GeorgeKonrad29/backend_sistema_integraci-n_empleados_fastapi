@@ -13,6 +13,7 @@ class LoginUser(BaseModel):
     correo: str
     rol: str | None = None
     nombre: str
+    cargo: int | None = None
 
 
 class LoginResponse(BaseModel):
@@ -29,7 +30,8 @@ class SignupRequest(BaseModel):
     """Modelo para solicitud de registro"""
     correo: str
     nombre: str
-    rol: str | None = "Operador"
+    rol: str | None = \"Operador\"
+    cargo: int | None = None
 
 
 class SignupResponse(BaseModel):

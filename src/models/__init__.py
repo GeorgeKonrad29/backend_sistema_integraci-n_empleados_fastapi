@@ -7,6 +7,7 @@ from .auth import (
     SignupRequest,
     SignupResponse,
 )
+from .jerarquia import JerarquiaResponse
 
 __all__ = [
     "LoginRequest",
@@ -16,4 +17,5 @@ __all__ = [
     "SignupResponse",
     "ActivatePasswordRequest",
     "ActivatePasswordResponse",
+    "JerarquiaResponse",
 ]
