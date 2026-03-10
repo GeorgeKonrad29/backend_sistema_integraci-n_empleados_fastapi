@@ -2,16 +2,20 @@ from fastapi import APIRouter, HTTPException, Request, Security
 
 try:
     from models.onboarding import OnboardingRequest, OnboardingResponse
-    from utils import require_admin_cargo
+    from utils import require_permission
 except ImportError:
     from ...models.onboarding import OnboardingRequest, OnboardingResponse
-    from ...utils import require_admin_cargo
+    from ...utils import require_permission
 
 router = APIRouter(tags=["onboarding"])
 
 
 @router.post("/", response_model=OnboardingResponse)
-async def create_onboarding_request(payload: OnboardingRequest, req: Request, token_payload: dict = Security(require_admin_cargo)):
+async def create_onboarding_request(
+    payload: OnboardingRequest,
+    req: Request,
+    token_payload: dict = Security(require_permission("onboarding.crear")),
+):
     """
     Crea una nueva solicitud de onboarding. Protegido. Solo usuarios con cargo 1, 7 o 24.
     """
@@ -95,7 +99,10 @@ async def create_onboarding_request(payload: OnboardingRequest, req: Request, to
 
 
 @router.get("/", response_model=list[OnboardingResponse])
-async def list_onboarding_requests(req: Request, token_payload: dict = Security(require_admin_cargo)):
+async def list_onboarding_requests(
+    req: Request,
+    token_payload: dict = Security(require_permission("onboarding.listar")),
+):
     """
     Lista todas las solicitudes de onboarding. Protegido. Solo usuarios con cargo 1, 7 o 24.
     """

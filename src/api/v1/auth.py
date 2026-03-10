@@ -24,7 +24,7 @@ try:
         get_jwt_secret,
         create_access_token,
         hash_password,
-        require_admin_cargo,
+        require_permission,
         verify_password,
     )
     from api.v1.pendiente_a_eliminar import get_activation_form_html
@@ -43,7 +43,7 @@ except ImportError:
         get_jwt_secret,
         create_access_token,
         hash_password,
-        require_admin_cargo,
+        require_permission,
         verify_password,
     )
     from .pendiente_a_eliminar import get_activation_form_html
@@ -202,7 +202,11 @@ async def get_current_user(req: Request, token_payload: dict = Security(get_curr
 
 
 @router.post("/signup", response_model=SignupResponse)
-async def signup(payload: SignupRequest, req: Request, token_payload: dict = Security(require_admin_cargo)):
+async def signup(
+    payload: SignupRequest,
+    req: Request,
+    token_payload: dict = Security(require_permission("usuarios.crear")),
+):
     """
     Endpoint de registro. Protegido. Solo usuarios con cargo 1, 7 o 24 pueden crear otros usuarios.
     """
@@ -278,7 +282,7 @@ async def signup(payload: SignupRequest, req: Request, token_payload: dict = Sec
 
 
 @router.get("/cargos", response_model=list[JerarquiaResponse])
-async def get_cargos(req: Request, token_payload: dict = Security(get_current_token_payload)):
+async def get_cargos(req: Request, token_payload: dict = Security(require_permission("cargos.listar"))):
     """
     Endpoint protegido que devuelve todos los cargos/jerarquía.
     Requiere JWT válido.

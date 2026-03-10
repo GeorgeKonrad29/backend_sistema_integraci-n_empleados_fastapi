@@ -2,12 +2,27 @@ from fastapi import HTTPException, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 try:
-    from utils import decode_access_token
+    from utils.jwt import decode_access_token
 except ImportError:
     from .jwt import decode_access_token
 
 bearer_scheme = HTTPBearer(auto_error=False)
-ALLOWED_CARGOS = [1, 7, 24]
+
+# Mapa editable: cada "rol funcional" define qué IDs de cargo están permitidos.
+# Agrega aquí nuevos roles y sus cargos.
+ROLE_CARGO_ACCESS: dict[str, list[int]] = {
+    "rrhh": [1, 7, 24],
+    "inventario": [],
+}
+
+# Mapa editable: cada permiso (acción/ruta) define qué roles funcionales pueden acceder.
+# Agrega o ajusta permisos según crezca el sistema.
+PERMISSION_ROLES: dict[str, list[str]] = {
+    "usuarios.crear": ["rrhh"],
+    "onboarding.crear": ["rrhh"],
+    "onboarding.listar": ["rrhh"],
+    "cargos.listar": ["rrhh", "inventario"],
+}
 
 
 async def get_jwt_secret(req: Request) -> str:
@@ -44,17 +59,43 @@ async def get_current_token_payload(
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
 
 
-async def require_admin_cargo(
-    req: Request,
-    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
-) -> dict:
-    payload = await get_current_token_payload(req, credentials)
-    cargo = payload.get("cargo")
+def _allowed_cargos_for_permission(permission_key: str) -> list[int]:
+    roles = PERMISSION_ROLES.get(permission_key)
+    if not roles:
+        return []
 
-    if cargo not in ALLOWED_CARGOS:
-        raise HTTPException(
-            status_code=403,
-            detail=f"No tiene permisos. Solo usuarios con cargo {ALLOWED_CARGOS} pueden acceder.",
-        )
+    allowed: set[int] = set()
+    for role_name in roles:
+        for cargo_id in ROLE_CARGO_ACCESS.get(role_name, []):
+            allowed.add(cargo_id)
 
-    return payload
+    return sorted(allowed)
+
+
+def require_permission(permission_key: str):
+    async def _dependency(
+        req: Request,
+        credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+    ) -> dict:
+        payload = await get_current_token_payload(req, credentials)
+        cargo = payload.get("cargo")
+
+        allowed_cargos = _allowed_cargos_for_permission(permission_key)
+        if not allowed_cargos:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Permiso '{permission_key}' sin configuración en ROLE_CARGO_ACCESS/PERMISSION_ROLES.",
+            )
+
+        if cargo not in allowed_cargos:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    f"No tiene permisos para '{permission_key}'. "
+                    f"Cargos permitidos: {allowed_cargos}."
+                ),
+            )
+
+        return payload
+
+    return _dependency
