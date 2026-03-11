@@ -11,8 +11,7 @@ try:
         SignupRequest,
         SignupResponse,
     )
-    from utils import hash_password
-    from ....utils import require_permission
+    from utils import hash_password, require_permission
     from api.v1.pendiente_a_eliminar import get_activation_form_html
 except ImportError:
     from ....models import (
