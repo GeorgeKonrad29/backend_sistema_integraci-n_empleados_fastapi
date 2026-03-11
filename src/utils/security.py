@@ -19,6 +19,7 @@ ROLE_CARGO_ACCESS: dict[str, list[int]] = {
 # Agrega o ajusta permisos según crezca el sistema.
 PERMISSION_ROLES: dict[str, list[str]] = {
     "usuarios.crear": ["rrhh"],
+    "auth.signup": ["rrhh"],
     "onboarding.crear": ["rrhh"],
     "onboarding.listar": ["rrhh"],
     "cargos.listar": ["rrhh", "inventario"],

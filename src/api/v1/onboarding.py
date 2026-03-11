@@ -7,7 +7,7 @@ except ImportError:
     from ...models.onboarding import OnboardingRequest, OnboardingResponse
     from ...utils import require_permission
 
-router = APIRouter(tags=["onboarding"])
+router = APIRouter()
 
 
 @router.post("/", response_model=OnboardingResponse)

@@ -151,7 +151,7 @@ async def get_current_user(req: Request, token_payload: dict = Security(get_curr
 async def signup(
     payload: SignupRequest,
     req: Request,
-    token_payload: dict = Security(require_permission("usuarios.crear")),
+    token_payload: dict = Security(require_permission("auth.signup")),
 ):
     """
     Endpoint de registro. Protegido. Solo usuarios con cargo 1, 7 o 24 pueden crear otros usuarios.
