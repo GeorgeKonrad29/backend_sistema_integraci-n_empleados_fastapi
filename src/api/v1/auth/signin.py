@@ -1,7 +1,7 @@
 """Endpoints de registro (signup) y activación de contraseña."""
 import secrets
 import time
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Security
 from fastapi.responses import HTMLResponse
 
 try:
@@ -12,6 +12,7 @@ try:
         SignupResponse,
     )
     from utils import hash_password
+    from ....utils import require_permission
     from api.v1.pendiente_a_eliminar import get_activation_form_html
 except ImportError:
     from ....models import (
@@ -20,7 +21,7 @@ except ImportError:
         SignupRequest,
         SignupResponse,
     )
-    from ....utils import hash_password
+    from ....utils import hash_password, require_permission
     from ..pendiente_a_eliminar import get_activation_form_html
 
 from .utils import (
@@ -33,7 +34,7 @@ router = APIRouter()
 
 
 @router.post("/signup", response_model=SignupResponse)
-async def signup(payload: SignupRequest, req: Request):
+async def signup(payload: SignupRequest, req: Request,token_payload: dict = Security(require_permission("auth.registrar"))):
     """
     Endpoint de registro. Crea usuario pendiente y genera enlace de activación.
     """
@@ -62,9 +63,9 @@ async def signup(payload: SignupRequest, req: Request):
 
     try:
         created_user = await db.prepare(
-            "INSERT INTO USUARIO (correo, contrasena, nombre, rol) VALUES (?, ?, ?, ?) RETURNING id"
+            "INSERT INTO USUARIO (correo, contrasena, nombre, rol, cargo) VALUES (?, ?, ?, ?, ?) RETURNING id, cargo"
         ).bind(
-            payload.correo, placeholder_password, payload.nombre, payload.rol or "Operador"
+            payload.correo, placeholder_password, payload.nombre, payload.rol or "Operador", payload.cargo
         ).first()
     except Exception as e:
         raise HTTPException(
