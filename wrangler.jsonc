@@ -26,5 +26,11 @@
 		"store_id": "29806d0257da4c6e996ae6340e9153c2",
 		"secret_name": "emailresend"
 		}
+		{
+			"binding": "JWTSecret",
+			"store_id":"38edc216fc81834f706a7fd991f8eb8e14d65deabb14a9741c1bebd54c204b9e",
+			"secret_name": "JWTSecret"
+		}
 	]
+	
 }
