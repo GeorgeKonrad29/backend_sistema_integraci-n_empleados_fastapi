@@ -29,10 +29,19 @@ PERMISSION_ROLES: dict[str, list[str]] = {
 async def get_jwt_secret(req: Request) -> str:
     env = req.scope["env"]
 
+    # Intentar con JWTSecret binding
+    secret_binding = getattr(env, "JWTSecret", None)
+    if secret_binding and hasattr(secret_binding, "get"):
+        fetched_secret = await secret_binding.get()
+        if fetched_secret and str(fetched_secret).strip():
+            return str(fetched_secret)
+
+    # Intentar con JWT_SECRET variable
     jwt_secret = getattr(env, "JWT_SECRET", None)
     if isinstance(jwt_secret, str) and jwt_secret.strip():
         return jwt_secret
 
+    # Intentar con jwt_secret binding
     secret_binding = getattr(env, "jwt_secret", None)
     if secret_binding and hasattr(secret_binding, "get"):
         fetched_secret = await secret_binding.get()
@@ -41,7 +50,7 @@ async def get_jwt_secret(req: Request) -> str:
 
     raise HTTPException(
         status_code=500,
-        detail="JWT secret no configurado en el entorno (JWT_SECRET o binding jwt_secret).",
+        detail="JWT secret no configurado (buscó: JWTSecret, JWT_SECRET, jwt_secret).",
     )
 
 
