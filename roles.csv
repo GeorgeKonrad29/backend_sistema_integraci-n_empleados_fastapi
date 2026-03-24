@@ -1,0 +1,57 @@
+ID,Nombre del Cargo,Área,Descripción,ID Jefe
+1,Asamblea de Socios,Máximo Órgano,Máxima autoridad de la cooperativa.,-
+2,Gerente General,Gerencia General,Lidera la ejecución estratégica de la entidad.,1
+3,Gerente Administrativo,G. Administración,Responsable del soporte físico de las oficinas y sucursales.,2
+4,Coord. de servicios corporativos,Servicios generales,"Gestiona contratos, suministros y estándares de higiene/seguridad.",3
+5,Aux. servicios y cafetería,Servicios generales,"Labores de aseo, desinfección y servicio de bebidas.",4
+6,Asistente compras e inventario,Servicios generales,Controla inventario de insumos y gestión con proveedores.,4
+7,Jefe de Infraestructura,Mantenimiento,Planifica el mantenimiento preventivo y cumplimiento de normativas.,3
+8,Técnico Mant. Locativo,Mantenimiento,"Ejecuta reparaciones de pintura, fontanería y cerrajería.",7
+9,Técnico Elec. y Climatización,Mantenimiento,Asegura el funcionamiento de aire acondicionado y red eléctrica.,7
+10,Gerente Comercial,G. comercial,"Captación de clientes, gestión de asesores y marketing.",2
+11,Coord. Ventas y Captación,Ventas y Captación,Responsable de traer nuevos socios y ahorros a la cooperativa.,10
+12,Ejecutivo Captación/Colocación,Ventas y Captación,Vinculación de socios y cumplimiento de metas de cartera.,11
+13,Asesor de Crédito Externo,Ventas y Captación,Prospección de clientes en terreno y recolección de documentos.,11
+14,Jefe de Canales,Gestión de canales,Encargado de los puntos de contacto para transacciones del socio.,10
+15,Coordinador de Sucursales,Gestión de canales,Supervisa la operación de los puntos de atención físicos.,14
+16,Admin. Canales Digitales,Gestión de canales,Gestiona la operatividad y experiencia en App y oficina virtual.,14
+17,Coord. Marketing y producto,Marketing y prod.,Diseño de campañas y análisis de necesidades de la comunidad.,10
+18,Analista de Producto,Marketing y prod.,Investiga tasas y diseña/mejora servicios financieros.,17
+19,Especialista Comunicación,Marketing y prod.,Crea campañas publicitarias y mantiene la identidad visual.,17
+20,Coord. Servicio al cliente,Servicio al cliente,"Dirige la estrategia de atención, fidelización y resuelve PQRS.",10
+21,Oficial Experiencia Asociado,Servicio al cliente,Resuelve de manera oportuna las PQRS de los socios.,20
+22,Analista Fidelización,Servicio al cliente,Diseña estrategias para evitar el retiro de asociados.,20
+23,Gerente de riesgos,G. riesgo y crédito,Análisis de capacidad de pago y prevención de lavado de activos.,2
+24,Coord. Análisis y crédito,Análisis de Crédito,Asegura la calidad de cartera y dirige el comité de crédito.,23
+25,Analista de Crédito Senior,Análisis de Crédito,Evalúa solvencia moral/económica y capacidad de pago.,24
+26,Asistente Verificación,Análisis de Crédito,Valida autenticidad de documentos y verifica garantías.,24
+27,Analista Microcrédito,Análisis de Crédito,Visitas domiciliarias para determinar riesgo en sectores informales.,24
+28,Coord. Riesgo Operativo,Riesgo Operativo,Mitiga riesgos humanos/tecnológicos y lidera continuidad.,23
+29,Oficial de Cumplimiento,Riesgo Operativo,Vigila normas de prevención de lavado de activos (SARLAFT).,28
+30,Analista Riesgo Operacional,Riesgo Operativo,Identifica fallas en procesos internos y sistemas tecnológicos.,28
+31,Auditor Procesos Crediticios,Riesgo Operativo,Supervisa que desembolsos cumplan el manual de políticas.,28
+32,Gerente Financiero,G. financiera,Gestión de liquidez y reportes regulatorios.,2
+33,Coordinador de Tesorería,Tesorería,Gestiona flujo de caja diario e inversiones de excedentes.,32
+34,Analista Tesorería y Pagos,Tesorería,"Programación de pagos, dispersión y control bancario.",33
+35,Coord. de Contabilidad,Contabilidad,Supervisa registros NIIF y estados financieros.,32
+36,Analista Impuestos y Costos,Contabilidad,Liquida obligaciones tributarias y analiza estructura de costos.,35
+37,Asistente Contable,Contabilidad,Conciliación de cuentas y registro de facturas.,35
+38,Coordinador de Planeación,Planeación,Lidera presupuesto anual e indicadores estratégicos.,32
+39,Analista Estudios Económicos,Planeación,Analiza tendencias de mercado y tasas de competencia.,38
+40,Gerente de TI,Gerencia TI,Mantenimiento de software financiero y seguridad de datos.,2
+41,Coord. Infraestructura,Infraestructura,"Supervisa servidores, firewalls y conectividad sucursales.",40
+42,Admin. Servidores y Nube,Infraestructura,"Gestiona almacenamiento, backups y core financiero.",41
+43,Coord. Desarrollo Software,Desarrollo,Lidera ciclo de vida de aplicaciones e integración de servicios.,40
+44,Desarrollador Full Stack,Desarrollo,Codifica front-end y back-end de la banca virtual.,43
+45,Analista de QA,Desarrollo,Pruebas de estrés y seguridad antes del lanzamiento.,43
+46,Coord. Soporte Técnico,Soporte Técnico,Gestiona la mesa de ayuda (Help Desk) e incidentes.,40
+47,Técnico Soporte Nivel 1,Soporte Técnico,"Asistencia directa en hardware, software y accesos.",46
+48,Gerente Talento Humano,G. talento humano,"Atrae, retiene y desarrolla el personal.",2
+49,Coord. Selección,Selección,Diseña procesos de atracción basados en valores y perfiles.,48
+50,Analista Atracción Talento,Selección,"Realiza convocatorias, entrevistas y pruebas psicotécnicas.",49
+51,Coord. Formación,Formación,Planifica programa anual de entrenamiento y normativa.,48
+52,Facilitador Aprendizaje,Formación,Desarrolla contenidos y dicta talleres de inducción.,51
+53,Coord. Nómina,Nómina,Garantiza el pago exacto de salarios y prestaciones.,48
+54,Analista Prestaciones,Nómina,"Gestiona afiliaciones a salud, pensión y riesgos laborales.",53
+55,Coord. Clima Org.,Clima Org.,Diagnostica y mejora el ambiente y principios cooperativos.,48
+56,Especialista Bienestar,Clima Org.,Organiza eventos y promueve equilibrio vida-trabajo.,55

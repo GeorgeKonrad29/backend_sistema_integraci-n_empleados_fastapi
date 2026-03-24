@@ -11,7 +11,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # Mapa editable: cada "rol funcional" define qué IDs de cargo están permitidos.
 # Agrega aquí nuevos roles y sus cargos.
 ROLE_CARGO_ACCESS: dict[str, list[int]] = {
-    "rrhh": [1, 7, 24],
+    "rrhh": [1, 48, 49],
     "inventario": [],
 }
 

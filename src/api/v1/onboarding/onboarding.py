@@ -4,8 +4,8 @@ try:
     from models.onboarding import OnboardingRequest, OnboardingResponse
     from utils import require_permission
 except ImportError:
-    from ...models.onboarding import OnboardingRequest, OnboardingResponse
-    from ...utils import require_permission
+    from ....models.onboarding import OnboardingRequest, OnboardingResponse
+    from ....utils import require_permission
 
 router = APIRouter()
 

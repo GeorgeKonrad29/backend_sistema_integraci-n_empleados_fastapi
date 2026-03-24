@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
+from .onboarding import onboarding
+
 from .auth import router as auth_router
-from . import system, onboarding
+from . import system
 
 router = APIRouter()
 
