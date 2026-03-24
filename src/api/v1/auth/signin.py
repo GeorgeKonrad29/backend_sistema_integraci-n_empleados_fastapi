@@ -33,7 +33,11 @@ router = APIRouter()
 
 
 @router.post("/signup", response_model=SignupResponse)
-async def signup(payload: SignupRequest, req: Request,token_payload: dict = Security(require_permission("auth.registrar"))):
+async def signup(
+    payload: SignupRequest,
+    req: Request,
+    token_payload: dict = Security(require_permission("auth.signup")),
+):
     """
     Endpoint de registro. Crea usuario pendiente y genera enlace de activación.
     """
@@ -105,6 +109,7 @@ async def signup(payload: SignupRequest, req: Request,token_payload: dict = Secu
             "correo": payload.correo,
             "rol": payload.rol,
             "nombre": payload.nombre,
+            "cargo": created_user.cargo,
         },
         "activation_link": activation_link,
         "email_sent": email_sent,
