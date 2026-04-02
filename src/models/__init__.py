@@ -8,6 +8,7 @@ from .auth import (
     SignupResponse,
 )
 from .jerarquia import JerarquiaResponse
+from .puesto_trabajo import PuestoTrabajoAsignacionRequest, PuestoTrabajoResponse
 
 __all__ = [
     "LoginRequest",
@@ -18,4 +19,6 @@ __all__ = [
     "ActivatePasswordRequest",
     "ActivatePasswordResponse",
     "JerarquiaResponse",
+    "PuestoTrabajoAsignacionRequest",
+    "PuestoTrabajoResponse",
 ]

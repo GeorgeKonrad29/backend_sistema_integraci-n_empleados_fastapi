@@ -68,6 +68,31 @@ class FakePreparedQuery:
                 destinatario=self.args[4] if len(self.args) > 4 else None,
             )
 
+        if "select id from puesto_de_trabajo where coordenadas = ? limit 1" in self.query:
+            coordenadas = self.args[0] if self.args else None
+            if coordenadas == "P1-F01-C01":
+                return FakeRow(id=1)
+            return None
+        if "insert into puesto_de_trabajo" in self.query:
+            return FakeRow(
+                id=777,
+                coordenadas=self.args[0] if self.args else "P1-F01-C01",
+                id_empleado=self.args[1] if len(self.args) > 1 else 48,
+                tipo_puesto=self.args[2] if len(self.args) > 2 else "Fijo",
+            )
+        if "from puesto_de_trabajo where id_empleado is not null" in self.query:
+            return FakeRow(
+                results=[
+                    FakeRow(id=777, coordenadas="P1-F01-C01", id_empleado=48, tipo_puesto="Fijo"),
+                ]
+            )
+        if "select id, coordenadas, id_empleado, tipo_puesto from puesto_de_trabajo" in self.query:
+            return FakeRow(
+                results=[
+                    FakeRow(id=777, coordenadas="P1-F01-C01", id_empleado=48, tipo_puesto="Fijo"),
+                    FakeRow(id=778, coordenadas="P2-F20-C20", id_empleado=None, tipo_puesto="Libre"),
+                ]
+            )
         if "insert or replace into activacion_usuario" in self.query:
             return FakeRow(success=True)
 
@@ -88,6 +113,12 @@ class FakePreparedQuery:
                 results=[
                     FakeRow(id=1, nombre_cargo="Asamblea de Socios", area="Máximo Órgano", id_jefe_inmediato=None),
                     FakeRow(id=48, nombre_cargo="Gerente Talento Humano", area="Gerencia de talento humano", id_jefe_inmediato=2),
+                ]
+            )
+        if "from puesto_de_trabajo where id_empleado is not null" in self.query:
+            return FakeRow(
+                results=[
+                    FakeRow(id=777, coordenadas="P1-F01-C01", id_empleado=48, tipo_puesto="Fijo"),
                 ]
             )
         if "select * from solicitudes" in self.query:
@@ -183,3 +214,14 @@ def token_factory():
 @pytest.fixture
 def rrhh_token(token_factory):
     return token_factory(48)
+
+
+@pytest.fixture
+def servicios_generales_token(token_factory):
+    return token_factory(
+        4,
+        sub="4",
+        correo="servicios@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Coord. de servicios corporativos",
+    )

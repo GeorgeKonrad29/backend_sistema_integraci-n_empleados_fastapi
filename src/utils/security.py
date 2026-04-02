@@ -12,6 +12,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # Agrega aquí nuevos roles y sus cargos.
 ROLE_CARGO_ACCESS: dict[str, list[int]] = {
     "rrhh": [1, 48, 49],
+    "servicios_generales": [4],
     "inventario": [],
 }
 
@@ -22,6 +23,7 @@ PERMISSION_ROLES: dict[str, list[str]] = {
     "auth.signup": ["rrhh"],
     "onboarding.crear": ["rrhh"],
     "onboarding.listar": ["rrhh"],
+    "puestos.asignar": ["servicios_generales"],
     "cargos.listar": ["rrhh", "inventario"],
 }
 
