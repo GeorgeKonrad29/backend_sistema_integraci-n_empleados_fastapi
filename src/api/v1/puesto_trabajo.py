@@ -48,6 +48,8 @@ def _workstation_from_row(row) -> dict:
     return {
         "id": row.id,
         "id_empleado": row.id_empleado,
+        "nombre_empleado": getattr(row, "nombre_empleado", None),
+        "area": getattr(row, "area", None),
         "tipo_puesto": row.tipo_puesto,
         "coordenadas": row.coordenadas,
         "piso": piso,
@@ -158,7 +160,14 @@ async def get_occupied_workstations(
 
     try:
         result = await db.prepare(
-            "SELECT id, coordenadas, id_empleado, tipo_puesto FROM PUESTO_DE_TRABAJO WHERE id_empleado IS NOT NULL ORDER BY coordenadas"
+            """
+            SELECT p.id, p.coordenadas, p.id_empleado, p.tipo_puesto, u.nombre AS nombre_empleado, j.area AS area
+            FROM PUESTO_DE_TRABAJO p
+            INNER JOIN USUARIO u ON u.id = p.id_empleado
+            INNER JOIN JERARQUIA j ON j.id = u.cargo
+            WHERE p.id_empleado IS NOT NULL
+            ORDER BY p.coordenadas
+            """
         ).all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo los puestos ocupados: {e}")

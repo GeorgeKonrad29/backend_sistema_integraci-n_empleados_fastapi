@@ -80,10 +80,17 @@ class FakePreparedQuery:
                 id_empleado=self.args[1] if len(self.args) > 1 else 48,
                 tipo_puesto=self.args[2] if len(self.args) > 2 else "Fijo",
             )
-        if "from puesto_de_trabajo where id_empleado is not null" in self.query:
+        if "from puesto_de_trabajo p" in self.query and "join usuario u on u.id = p.id_empleado" in self.query and "join jerarquia j on j.id = u.cargo" in self.query:
             return FakeRow(
                 results=[
-                    FakeRow(id=777, coordenadas="P1-F01-C01", id_empleado=48, tipo_puesto="Fijo"),
+                    FakeRow(
+                        id=777,
+                        coordenadas="P1-F01-C01",
+                        id_empleado=48,
+                        nombre_empleado="Gerente RRHH",
+                        area="Gerencia de talento humano",
+                        tipo_puesto="Fijo",
+                    ),
                 ]
             )
         if "select id, coordenadas, id_empleado, tipo_puesto from puesto_de_trabajo" in self.query:
@@ -115,10 +122,17 @@ class FakePreparedQuery:
                     FakeRow(id=48, nombre_cargo="Gerente Talento Humano", area="Gerencia de talento humano", id_jefe_inmediato=2),
                 ]
             )
-        if "from puesto_de_trabajo where id_empleado is not null" in self.query:
+        if "from puesto_de_trabajo p" in self.query and "where p.id_empleado is not null" in self.query:
             return FakeRow(
                 results=[
-                    FakeRow(id=777, coordenadas="P1-F01-C01", id_empleado=48, tipo_puesto="Fijo"),
+                    FakeRow(
+                        id=777,
+                        coordenadas="P1-F01-C01",
+                        id_empleado=48,
+                        nombre_empleado="Gerente RRHH",
+                        area="Gerencia de talento humano",
+                        tipo_puesto="Fijo",
+                    ),
                 ]
             )
         if "select * from solicitudes" in self.query:

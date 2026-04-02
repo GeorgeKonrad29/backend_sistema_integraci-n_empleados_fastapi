@@ -101,6 +101,8 @@ def test_occupied_workstations_returns_only_assigned_ones(client, rrhh_token):
     payload = response.json()
     assert payload["count"] == 1
     assert payload["ocupadas"][0]["coordenadas"] == "P1-F01-C01"
+    assert payload["ocupadas"][0]["nombre_empleado"] == "Gerente RRHH"
+    assert payload["ocupadas"][0]["area"] == "Gerencia de talento humano"
     assert payload["ocupadas"][0]["ocupado"] is True
 
 
