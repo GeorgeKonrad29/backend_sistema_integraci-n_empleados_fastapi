@@ -18,6 +18,14 @@ class OnboardingRequest(BaseModel):
     estado: EstadoSolicitud = EstadoSolicitud.PENDIENTE
 
 
+class OnboardingUpdateRequest(BaseModel):
+    """modelo para actualización parcial de una solicitud de onboarding"""
+    fecha_fin: datetime | None = None
+    destinatario: str | None = None
+    especificaciones: str | None = None
+    estado: EstadoSolicitud | None = None
+
+
 class OnboardingResponse(BaseModel):
     """Modelo para el response de la solicitud del onboarding"""
     id: int

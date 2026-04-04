@@ -156,6 +156,45 @@ def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
     assert payload[0]["id_empleado"] == 50
 
 
+def test_team_onboarding_requests_filters_by_estado(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes-equipo?estado=Finalizado",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == 558
+    assert payload[0]["estado"] == "Finalizado"
+
+
+def test_team_onboarding_requests_filters_by_date_range(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-04T00:00:00&fecha_hasta=2026-04-04T23:59:59",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == 558
+
+
+def test_team_onboarding_requests_invalid_estado_returns_400(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes-equipo?estado=Abierto",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
+def test_team_onboarding_requests_invalid_date_range_returns_400(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-05T00:00:00&fecha_hasta=2026-04-04T00:00:00",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
 def test_team_onboarding_requests_without_token_returns_401(client):
     response = client.get("/v1/onboarding/solicitudes-equipo")
     assert response.status_code == 401
@@ -265,3 +304,80 @@ def test_assigned_onboarding_requests_invalid_date_format_returns_400(client, to
 def test_assigned_onboarding_requests_without_token_returns_401(client):
     response = client.get("/v1/onboarding/solicitudes-asignadas")
     assert response.status_code == 401
+
+
+def test_update_onboarding_request_by_assigned_resolver(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.patch(
+        "/v1/onboarding/556",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+        json={"estado": "En proceso", "especificaciones": "Equipo asignado"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 556
+    assert payload["estado"] == "En proceso"
+    assert payload["especificaciones"] == "Equipo asignado"
+
+
+def test_update_onboarding_request_hands_off_to_next_responsible(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.patch(
+        "/v1/onboarding/556",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+        json={"estado": "En proceso"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 556
+    assert payload["estado"] == "En proceso"
+    assert payload["destinatario"] == "Coordinador de servicios corporativos"
+
+
+def test_update_onboarding_request_by_rrhh(client, rrhh_token):
+    response = client.patch(
+        "/v1/onboarding/321",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+        json={"estado": "Finalizado"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 321
+    assert payload["estado"] == "Finalizado"
+
+
+def test_update_onboarding_request_forbidden_for_unassigned_user(client, token_factory):
+    operador_token = token_factory(
+        44,
+        sub="44",
+        correo="operador@sinergia.com",
+        rol="Operador",
+        nombre="Operador",
+    )
+    response = client.patch(
+        "/v1/onboarding/556",
+        headers={"Authorization": f"Bearer {operador_token}"},
+        json={"estado": "En proceso"},
+    )
+    assert response.status_code == 403
+
+
+def test_update_onboarding_request_without_payload_returns_400(client, rrhh_token):
+    response = client.patch(
+        "/v1/onboarding/321",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+        json={},
+    )
+    assert response.status_code == 400

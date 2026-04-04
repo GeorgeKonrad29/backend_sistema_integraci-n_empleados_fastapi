@@ -59,6 +59,16 @@ class FakePreparedQuery:
                 return FakeRow(nombre_cargo="Coordinador de servicios corporativos", area="Servicios generales")
             if cargo_id == 48:
                 return FakeRow(nombre_cargo="Gerente Talento Humano", area="Gerencia de talento humano")
+            if cargo_id == 44:
+                return FakeRow(nombre_cargo="Analista de Operaciones", area="Operaciones")
+            return None
+
+        if "select nombre_cargo, area from jerarquia where id_jefe_inmediato = ? order by id limit 1" in self.query:
+            cargo_id = self.args[0] if self.args else None
+            if cargo_id == 7:
+                return FakeRow(nombre_cargo="Coordinador de servicios corporativos", area="Servicios generales")
+            if cargo_id == 48:
+                return FakeRow(nombre_cargo="Analista de procesos", area="Procesos")
             return None
 
         if "select id from usuario where correo = ? limit 1" in self.query:
@@ -76,6 +86,41 @@ class FakePreparedQuery:
                 estado=self.args[2] if len(self.args) > 2 else "Pendiente",
                 especificaciones=self.args[3] if len(self.args) > 3 else "",
                 destinatario=self.args[4] if len(self.args) > 4 else None,
+            )
+
+        if "from solicitudes where id = ? limit 1" in self.query:
+            solicitud_id = self.args[0] if self.args else None
+            if solicitud_id == 556:
+                return FakeRow(
+                    id=556,
+                    id_empleado=51,
+                    fecha_creacion="2026-04-03T00:00:00",
+                    fecha_fin="2026-04-20T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Asignar hardware y credenciales de acceso",
+                    destinatario="Jefe de Infraestructura y Mantenimiento",
+                )
+            if solicitud_id == 321:
+                return FakeRow(
+                    id=321,
+                    id_empleado=48,
+                    fecha_creacion="2026-04-01T00:00:00",
+                    fecha_fin="2026-04-15T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Inducción corporativa",
+                    destinatario="Recursos Humanos",
+                )
+            return None
+
+        if "update solicitudes set fecha_fin = ?, estado = ?, especificaciones = ?, destinatario = ? where id = ? returning" in self.query:
+            return FakeRow(
+                id=self.args[4] if len(self.args) > 4 else 556,
+                id_empleado=51,
+                fecha_creacion="2026-04-03T00:00:00",
+                fecha_fin=self.args[0] if len(self.args) > 0 else "2026-04-20T00:00:00",
+                estado=self.args[1] if len(self.args) > 1 else "Pendiente",
+                especificaciones=self.args[2] if len(self.args) > 2 else "Asignar hardware y credenciales de acceso",
+                destinatario=self.args[3] if len(self.args) > 3 else "Jefe de Infraestructura y Mantenimiento",
             )
 
         if "select id from puesto_de_trabajo where coordenadas = ? limit 1" in self.query:
@@ -160,19 +205,45 @@ class FakePreparedQuery:
                 ]
             )
         if "join usuario u on u.id = s.id_empleado" in self.query and "where j.id_jefe_inmediato = ?" in self.query:
-            return FakeRow(
-                results=[
-                    FakeRow(
-                        id=555,
-                        id_empleado=50,
-                        fecha_creacion="2026-04-02T00:00:00",
-                        fecha_fin="2026-04-15T00:00:00",
-                        estado="Pendiente",
-                        especificaciones="Entregar laptop y credenciales",
-                        destinatario="TI",
-                    )
-                ]
-            )
+            rows = [
+                FakeRow(
+                    id=555,
+                    id_empleado=50,
+                    fecha_creacion="2026-04-02T00:00:00",
+                    fecha_fin="2026-04-15T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Entregar laptop y credenciales",
+                    destinatario="TI",
+                ),
+                FakeRow(
+                    id=558,
+                    id_empleado=53,
+                    fecha_creacion="2026-04-04T00:00:00",
+                    fecha_fin="2026-04-18T00:00:00",
+                    estado="Finalizado",
+                    especificaciones="Entrega de acceso y equipo",
+                    destinatario="TI",
+                ),
+            ]
+
+            filtered = rows
+
+            arg_index = 1
+            if "s.estado = ?" in self.query:
+                estado = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.estado == estado]
+                arg_index += 1
+
+            if "s.fecha_creacion >= ?" in self.query:
+                fecha_desde = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion >= fecha_desde]
+                arg_index += 1
+
+            if "s.fecha_creacion <= ?" in self.query:
+                fecha_hasta = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion <= fecha_hasta]
+
+            return FakeRow(results=filtered)
         if "from solicitudes s" in self.query and "lower(trim(s.destinatario)) = lower(trim(?))" in self.query:
             destinatario_cargo = str((self.args[0] if len(self.args) > 0 else "") or "").strip().lower()
             destinatario_area = str((self.args[1] if len(self.args) > 1 else "") or "").strip().lower()
