@@ -152,3 +152,51 @@ async def list_team_onboarding_requests(
         raise HTTPException(status_code=500, detail=f"Error al obtener solicitudes del equipo: {str(e)}")
 
     return _rows_to_onboarding_response_list(query_result.results)
+
+
+@router.get("/solicitudes-asignadas", response_model=list[OnboardingResponse])
+async def list_assigned_onboarding_requests(
+    req: Request,
+    token_payload: dict = Security(get_current_token_payload),
+):
+    """
+    Lista las solicitudes de onboarding asignadas al usuario logueado para resolver,
+    comparando el destinatario con su nombre de cargo o su área.
+    """
+    env = req.scope["env"]
+    db = env.dataBase
+
+    cargo_id = token_payload.get("cargo")
+    if cargo_id is None:
+        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+
+    try:
+        cargo_info = await db.prepare(
+            "SELECT nombre_cargo, area FROM JERARQUIA WHERE id = ? LIMIT 1"
+        ).bind(cargo_id).first()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo cargo del usuario: {str(e)}")
+
+    if not cargo_info:
+        raise HTTPException(status_code=404, detail="No se encontró el cargo del usuario en jerarquía")
+
+    nombre_cargo = str(cargo_info.nombre_cargo or "").strip()
+    area = str(cargo_info.area or "").strip()
+
+    if not nombre_cargo and not area:
+        return []
+
+    try:
+        query_result = await db.prepare(
+            """
+            SELECT s.id, s.id_empleado, s.fecha_creacion, s.fecha_fin, s.estado, s.especificaciones, s.destinatario
+            FROM SOLICITUDES s
+            WHERE LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?))
+               OR LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?))
+            ORDER BY s.fecha_creacion DESC
+            """
+        ).bind(nombre_cargo, area).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo solicitudes asignadas: {str(e)}")
+
+    return _rows_to_onboarding_response_list(query_result.results)

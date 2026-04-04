@@ -51,6 +51,16 @@ class FakePreparedQuery:
         if "select id from usuario where id = ?" in self.query:
             return FakeRow(id=48)
 
+        if "select nombre_cargo, area from jerarquia where id = ? limit 1" in self.query:
+            cargo_id = self.args[0] if self.args else None
+            if cargo_id == 7:
+                return FakeRow(nombre_cargo="Jefe de Infraestructura y Mantenimiento", area="Mantenimiento")
+            if cargo_id == 4:
+                return FakeRow(nombre_cargo="Coordinador de servicios corporativos", area="Servicios generales")
+            if cargo_id == 48:
+                return FakeRow(nombre_cargo="Gerente Talento Humano", area="Gerencia de talento humano")
+            return None
+
         if "select id from usuario where correo = ? limit 1" in self.query:
             return None
 
@@ -163,6 +173,38 @@ class FakePreparedQuery:
                     )
                 ]
             )
+        if "from solicitudes s" in self.query and "where lower(trim(s.destinatario)) = lower(trim(?))" in self.query:
+            destinatario_cargo = (self.args[0] if len(self.args) > 0 else "") or ""
+            destinatario_area = (self.args[1] if len(self.args) > 1 else "") or ""
+            if str(destinatario_cargo).strip().lower() == "jefe de infraestructura y mantenimiento":
+                return FakeRow(
+                    results=[
+                        FakeRow(
+                            id=556,
+                            id_empleado=51,
+                            fecha_creacion="2026-04-03T00:00:00",
+                            fecha_fin="2026-04-20T00:00:00",
+                            estado="Pendiente",
+                            especificaciones="Asignar hardware y credenciales de acceso",
+                            destinatario="Jefe de Infraestructura y Mantenimiento",
+                        )
+                    ]
+                )
+            if str(destinatario_area).strip().lower() == "mantenimiento":
+                return FakeRow(
+                    results=[
+                        FakeRow(
+                            id=557,
+                            id_empleado=52,
+                            fecha_creacion="2026-04-04T00:00:00",
+                            fecha_fin="2026-04-25T00:00:00",
+                            estado="Pendiente",
+                            especificaciones="Adecuación de puesto físico en oficina",
+                            destinatario="Mantenimiento",
+                        )
+                    ]
+                )
+            return FakeRow(results=[])
         return FakeRow(results=[])
 
     async def run(self):

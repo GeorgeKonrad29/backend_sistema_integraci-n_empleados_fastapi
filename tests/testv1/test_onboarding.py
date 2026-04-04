@@ -159,3 +159,27 @@ def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
 def test_team_onboarding_requests_without_token_returns_401(client):
     response = client.get("/v1/onboarding/solicitudes-equipo")
     assert response.status_code == 401
+
+
+def test_assigned_onboarding_requests_returns_for_resolver(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload, list)
+    assert payload[0]["id"] == 556
+    assert payload[0]["destinatario"] == "Jefe de Infraestructura y Mantenimiento"
+
+
+def test_assigned_onboarding_requests_without_token_returns_401(client):
+    response = client.get("/v1/onboarding/solicitudes-asignadas")
+    assert response.status_code == 401
