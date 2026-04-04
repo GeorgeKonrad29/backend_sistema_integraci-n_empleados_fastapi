@@ -37,3 +37,15 @@ class OnboardingResponse(BaseModel):
     destinatario: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OnboardingHistoryResponse(BaseModel):
+    """Modelo para eventos del historial de una solicitud"""
+    id: int
+    id_solicitud: int
+    fecha_cambio: datetime
+    tipo_cambio: str
+    estado_antiguo: str | None = None
+    nuevo_estado: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)

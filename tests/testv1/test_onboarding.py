@@ -381,3 +381,61 @@ def test_update_onboarding_request_without_payload_returns_400(client, rrhh_toke
         json={},
     )
     assert response.status_code == 400
+
+
+def test_onboarding_history_visible_for_rrhh(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes/321/historial",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id_solicitud"] == 321
+    assert payload[0]["tipo_cambio"] == "CREACION"
+
+
+def test_onboarding_history_visible_for_direct_boss(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes/556/historial",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 2
+    assert payload[0]["id_solicitud"] == 556
+
+
+def test_onboarding_history_forbidden_for_unrelated_user(client, token_factory):
+    operador_token = token_factory(
+        44,
+        sub="44",
+        correo="operador@sinergia.com",
+        rol="Operador",
+        nombre="Operador",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes/556/historial",
+        headers={"Authorization": f"Bearer {operador_token}"},
+    )
+    assert response.status_code == 403
+
+
+def test_onboarding_history_not_found_returns_404(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/solicitudes/999/historial",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 404
+
+
+def test_onboarding_history_without_token_returns_401(client):
+    response = client.get("/v1/onboarding/solicitudes/321/historial")
+    assert response.status_code == 401

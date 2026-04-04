@@ -112,6 +112,40 @@ class FakePreparedQuery:
                 )
             return None
 
+        if "from solicitudes s join usuario u on u.id = s.id_empleado where s.id = ? limit 1" in self.query:
+            solicitud_id = self.args[0] if self.args else None
+            if solicitud_id == 556:
+                return FakeRow(
+                    id=556,
+                    id_empleado=51,
+                    fecha_creacion="2026-04-03T00:00:00",
+                    fecha_fin="2026-04-20T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Asignar hardware y credenciales de acceso",
+                    destinatario="Jefe de Infraestructura y Mantenimiento",
+                    cargo_empleado=8,
+                )
+            if solicitud_id == 321:
+                return FakeRow(
+                    id=321,
+                    id_empleado=48,
+                    fecha_creacion="2026-04-01T00:00:00",
+                    fecha_fin="2026-04-15T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Inducción corporativa",
+                    destinatario="Recursos Humanos",
+                    cargo_empleado=48,
+                )
+            return None
+
+        if "select id_jefe_inmediato from jerarquia where id = ? limit 1" in self.query:
+            cargo_id = self.args[0] if self.args else None
+            if cargo_id == 8:
+                return FakeRow(id_jefe_inmediato=7)
+            if cargo_id == 48:
+                return FakeRow(id_jefe_inmediato=2)
+            return FakeRow(id_jefe_inmediato=None)
+
         if "update solicitudes set fecha_fin = ?, estado = ?, especificaciones = ?, destinatario = ? where id = ? returning" in self.query:
             return FakeRow(
                 id=self.args[4] if len(self.args) > 4 else 556,
@@ -291,6 +325,43 @@ class FakePreparedQuery:
                 filtered = [r for r in filtered if r.fecha_creacion <= fecha_hasta]
 
             return FakeRow(results=filtered)
+        if "from historial" in self.query and "where id_solicitud = ?" in self.query:
+            solicitud_id = self.args[0] if self.args else None
+            if solicitud_id == 556:
+                return FakeRow(
+                    results=[
+                        FakeRow(
+                            id=9002,
+                            id_solicitud=556,
+                            fecha_cambio="2026-04-03T10:00:00",
+                            tipo_cambio="CAMBIO_ESTADO",
+                            estado_antiguo="Pendiente",
+                            nuevo_estado="En proceso",
+                        ),
+                        FakeRow(
+                            id=9001,
+                            id_solicitud=556,
+                            fecha_cambio="2026-04-03T09:00:00",
+                            tipo_cambio="CREACION",
+                            estado_antiguo=None,
+                            nuevo_estado="Pendiente",
+                        ),
+                    ]
+                )
+            if solicitud_id == 321:
+                return FakeRow(
+                    results=[
+                        FakeRow(
+                            id=8001,
+                            id_solicitud=321,
+                            fecha_cambio="2026-04-01T09:00:00",
+                            tipo_cambio="CREACION",
+                            estado_antiguo=None,
+                            nuevo_estado="Pendiente",
+                        )
+                    ]
+                )
+            return FakeRow(results=[])
         return FakeRow(results=[])
 
     async def run(self):
