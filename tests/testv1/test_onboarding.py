@@ -180,6 +180,88 @@ def test_assigned_onboarding_requests_returns_for_resolver(client, token_factory
     assert payload[0]["destinatario"] == "Jefe de Infraestructura y Mantenimiento"
 
 
+def test_assigned_onboarding_requests_filters_by_estado(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas?estado=Finalizado",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == 557
+    assert payload[0]["estado"] == "Finalizado"
+
+
+def test_assigned_onboarding_requests_filters_by_date_range(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas?fecha_desde=2026-04-04T00:00:00&fecha_hasta=2026-04-04T23:59:59",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == 557
+
+
+def test_assigned_onboarding_requests_invalid_estado_returns_400(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas?estado=Abierto",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 400
+
+
+def test_assigned_onboarding_requests_invalid_date_range_returns_400(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas?fecha_desde=2026-04-05T00:00:00&fecha_hasta=2026-04-04T00:00:00",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 400
+
+
+def test_assigned_onboarding_requests_invalid_date_format_returns_400(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.get(
+        "/v1/onboarding/solicitudes-asignadas?fecha_desde=2026/04/04",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 400
+
+
 def test_assigned_onboarding_requests_without_token_returns_401(client):
     response = client.get("/v1/onboarding/solicitudes-asignadas")
     assert response.status_code == 401

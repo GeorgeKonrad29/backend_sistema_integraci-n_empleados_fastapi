@@ -173,38 +173,53 @@ class FakePreparedQuery:
                     )
                 ]
             )
-        if "from solicitudes s" in self.query and "where lower(trim(s.destinatario)) = lower(trim(?))" in self.query:
-            destinatario_cargo = (self.args[0] if len(self.args) > 0 else "") or ""
-            destinatario_area = (self.args[1] if len(self.args) > 1 else "") or ""
-            if str(destinatario_cargo).strip().lower() == "jefe de infraestructura y mantenimiento":
-                return FakeRow(
-                    results=[
-                        FakeRow(
-                            id=556,
-                            id_empleado=51,
-                            fecha_creacion="2026-04-03T00:00:00",
-                            fecha_fin="2026-04-20T00:00:00",
-                            estado="Pendiente",
-                            especificaciones="Asignar hardware y credenciales de acceso",
-                            destinatario="Jefe de Infraestructura y Mantenimiento",
-                        )
-                    ]
-                )
-            if str(destinatario_area).strip().lower() == "mantenimiento":
-                return FakeRow(
-                    results=[
-                        FakeRow(
-                            id=557,
-                            id_empleado=52,
-                            fecha_creacion="2026-04-04T00:00:00",
-                            fecha_fin="2026-04-25T00:00:00",
-                            estado="Pendiente",
-                            especificaciones="Adecuación de puesto físico en oficina",
-                            destinatario="Mantenimiento",
-                        )
-                    ]
-                )
-            return FakeRow(results=[])
+        if "from solicitudes s" in self.query and "lower(trim(s.destinatario)) = lower(trim(?))" in self.query:
+            destinatario_cargo = str((self.args[0] if len(self.args) > 0 else "") or "").strip().lower()
+            destinatario_area = str((self.args[1] if len(self.args) > 1 else "") or "").strip().lower()
+
+            rows = [
+                FakeRow(
+                    id=556,
+                    id_empleado=51,
+                    fecha_creacion="2026-04-03T00:00:00",
+                    fecha_fin="2026-04-20T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Asignar hardware y credenciales de acceso",
+                    destinatario="Jefe de Infraestructura y Mantenimiento",
+                ),
+                FakeRow(
+                    id=557,
+                    id_empleado=52,
+                    fecha_creacion="2026-04-04T00:00:00",
+                    fecha_fin="2026-04-25T00:00:00",
+                    estado="Finalizado",
+                    especificaciones="Adecuación de puesto físico en oficina",
+                    destinatario="Mantenimiento",
+                ),
+            ]
+
+            filtered = [
+                r
+                for r in rows
+                if str(r.destinatario).strip().lower() in {destinatario_cargo, destinatario_area}
+            ]
+
+            arg_index = 2
+            if "s.estado = ?" in self.query:
+                estado = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.estado == estado]
+                arg_index += 1
+
+            if "s.fecha_creacion >= ?" in self.query:
+                fecha_desde = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion >= fecha_desde]
+                arg_index += 1
+
+            if "s.fecha_creacion <= ?" in self.query:
+                fecha_hasta = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion <= fecha_hasta]
+
+            return FakeRow(results=filtered)
         return FakeRow(results=[])
 
     async def run(self):
