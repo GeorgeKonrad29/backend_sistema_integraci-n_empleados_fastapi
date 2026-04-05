@@ -39,7 +39,7 @@ class FakePreparedQuery:
                 )
             return None
 
-        if "from usuario where id = ? limit 1" in self.query:
+        if "select id, correo, rol, nombre, cargo from usuario where id = ? limit 1" in self.query:
             return FakeRow(
                 id=48,
                 correo="rrhh@sinergia.com",
@@ -48,8 +48,33 @@ class FakePreparedQuery:
                 cargo=48,
             )
 
+        if "select id, cargo from usuario where id = ? limit 1" in self.query:
+            empleado_id = self.args[0] if self.args else None
+            if empleado_id == 48:
+                return FakeRow(id=48, cargo=8)
+            return FakeRow(id=empleado_id or 48, cargo=8)
+
         if "select id from usuario where id = ?" in self.query:
             return FakeRow(id=48)
+
+        if "select id from dotacion where lower(trim(especificacion)) = lower(trim(?)) limit 1" in self.query:
+            especificacion = str(self.args[0] if self.args else "").strip().lower()
+            known = {
+                "asignación de herramientas y accesos base",
+                "programación de inducción inicial",
+                "validación de puesto y logística de ingreso",
+                "inducción corporativa",
+                "plantilla existente",
+            }
+            if especificacion in known:
+                return FakeRow(id=10)
+            return None
+
+        if "select id, encargado, tipo, especificacion from dotacion where lower(trim(especificacion)) = lower(trim(?)) limit 1" in self.query:
+            especificacion = str(self.args[0] if self.args else "").strip().lower()
+            if especificacion == "plantilla existente":
+                return FakeRow(id=10, encargado="RRHH", tipo="Onboarding", especificacion="Plantilla existente")
+            return None
 
         if "select nombre_cargo, area from jerarquia where id = ? limit 1" in self.query:
             cargo_id = self.args[0] if self.args else None
@@ -86,6 +111,14 @@ class FakePreparedQuery:
                 estado=self.args[2] if len(self.args) > 2 else "Pendiente",
                 especificaciones=self.args[3] if len(self.args) > 3 else "",
                 destinatario=self.args[4] if len(self.args) > 4 else None,
+            )
+
+        if "insert into dotacion (encargado, tipo, especificacion) values (?, ?, ?) returning id, encargado, tipo, especificacion" in self.query:
+            return FakeRow(
+                id=700,
+                encargado=self.args[0] if len(self.args) > 0 else None,
+                tipo=self.args[1] if len(self.args) > 1 else "Onboarding",
+                especificacion=self.args[2] if len(self.args) > 2 else "",
             )
 
         if "from solicitudes where id = ? limit 1" in self.query:
@@ -145,6 +178,12 @@ class FakePreparedQuery:
             if cargo_id == 48:
                 return FakeRow(id_jefe_inmediato=2)
             return FakeRow(id_jefe_inmediato=None)
+
+        if "select id from jerarquia where id_jefe_inmediato = ? limit 1" in self.query:
+            cargo_id = self.args[0] if self.args else None
+            if cargo_id == 7:
+                return FakeRow(id=8)
+            return None
 
         if "update solicitudes set fecha_fin = ?, estado = ?, especificaciones = ?, destinatario = ? where id = ? returning" in self.query:
             return FakeRow(

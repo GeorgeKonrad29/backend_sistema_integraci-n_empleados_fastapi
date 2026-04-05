@@ -62,6 +62,36 @@ def test_auth_signup_returns_activation_link_for_rrhh(client, rrhh_token, monkey
     assert "activation_link" in payload
 
 
+def test_auth_signup_creates_default_onboarding_requests(client, rrhh_token, monkeypatch):
+    from src.api.v1.auth import signin as signin_module
+
+    called = {"value": False}
+
+    async def fake_send_activation_email(*_args, **_kwargs):
+        return True
+
+    async def fake_create_default_onboarding_requests(*_args, **_kwargs):
+        called["value"] = True
+
+    monkeypatch.setattr(signin_module, "send_activation_email", fake_send_activation_email)
+    monkeypatch.setattr(signin_module, "_create_default_onboarding_requests", fake_create_default_onboarding_requests)
+
+    response = client.post(
+        "/v1/auth/signup",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+        json={
+            "nombre": "Usuario Nuevo 2",
+            "correo": "nuevo2@empresa.com",
+            "contrasena": "",
+            "rol": "Operador",
+            "cargo": 44,
+        },
+    )
+
+    assert response.status_code == 200
+    assert called["value"] is True
+
+
 def test_auth_activate_password_updates_user_password(client):
     response = client.post(
         "/v1/auth/activate-password",

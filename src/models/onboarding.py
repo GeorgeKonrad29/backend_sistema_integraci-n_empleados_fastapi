@@ -35,6 +35,7 @@ class OnboardingResponse(BaseModel):
     estado: EstadoSolicitud
     especificaciones: str | None = None
     destinatario: str | None = None
+    aviso: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,5 +48,23 @@ class OnboardingHistoryResponse(BaseModel):
     tipo_cambio: str
     estado_antiguo: str | None = None
     nuevo_estado: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DotacionTemplateRequest(BaseModel):
+    """Modelo para crear una plantilla en DOTACION"""
+    encargado: str | None = None
+    tipo: str | None = "Onboarding"
+    especificacion: str
+
+
+class DotacionTemplateResponse(BaseModel):
+    """Modelo de respuesta de plantilla creada en DOTACION"""
+    id: int
+    encargado: str | None = None
+    tipo: str | None = None
+    especificacion: str
+    aviso: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

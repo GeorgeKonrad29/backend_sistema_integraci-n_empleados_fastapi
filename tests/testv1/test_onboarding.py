@@ -25,8 +25,14 @@ class FakePreparedQuery:
         return self
 
     async def first(self):
-        if "select id from usuario where id = ?" in self.query:
-            return FakeRow(id=48)
+        if "select id, cargo from usuario where id = ? limit 1" in self.query:
+            return FakeRow(id=48, cargo=8)
+
+        if "select id_jefe_inmediato from jerarquia where id = ? limit 1" in self.query:
+            return FakeRow(id_jefe_inmediato=7)
+
+        if "select id from dotacion where lower(trim(especificacion)) = lower(trim(?)) limit 1" in self.query:
+            return None
 
         if "insert into solicitudes" in self.query:
             return FakeRow(
@@ -90,7 +96,7 @@ def test_onboarding_create_requires_permission_and_returns_request():
         create_onboarding_request(
             payload=payload,
             req=FakeRequest(),
-            token_payload={"cargo": 48},
+            token_payload={"cargo": 7},
         )
     )
     assert result.id == 321
@@ -122,6 +128,74 @@ def test_onboarding_create_without_token_returns_401(client):
     assert response.status_code == 401
 
 
+def test_create_dotacion_template_by_immediate_boss(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.post(
+        "/v1/onboarding/dotacion",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+        json={
+            "encargado": "Coordinador de servicios corporativos",
+            "tipo": "Onboarding",
+            "especificacion": "Plantilla nueva onboarding",
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 700
+    assert payload["especificacion"] == "Plantilla nueva onboarding"
+
+
+def test_create_dotacion_template_duplicate_returns_409(client, rrhh_token):
+    response = client.post(
+        "/v1/onboarding/dotacion",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+        json={
+            "encargado": "RRHH",
+            "tipo": "Onboarding",
+            "especificacion": "Plantilla existente",
+        },
+    )
+    assert response.status_code == 409
+
+
+def test_create_dotacion_template_forbidden_for_user_without_team(client, token_factory):
+    operador_token = token_factory(
+        44,
+        sub="44",
+        correo="operador@sinergia.com",
+        rol="Operador",
+        nombre="Operador",
+    )
+    response = client.post(
+        "/v1/onboarding/dotacion",
+        headers={"Authorization": f"Bearer {operador_token}"},
+        json={
+            "encargado": "RRHH",
+            "tipo": "Onboarding",
+            "especificacion": "Plantilla no permitida",
+        },
+    )
+    assert response.status_code == 403
+
+
+def test_create_dotacion_template_without_token_returns_401(client):
+    response = client.post(
+        "/v1/onboarding/dotacion",
+        json={
+            "encargado": "RRHH",
+            "tipo": "Onboarding",
+            "especificacion": "Plantilla sin token",
+        },
+    )
+    assert response.status_code == 401
+
+
 def test_onboarding_create_with_forbidden_cargo_returns_403(client, token_factory):
     token = token_factory(
         44,
@@ -144,6 +218,31 @@ def test_onboarding_create_with_forbidden_cargo_returns_403(client, token_factor
     assert response.status_code == 403
 
 
+def test_onboarding_create_by_immediate_boss_creates_missing_template_and_returns_aviso(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.post(
+        "/v1/onboarding/",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+        json={
+            "id_empleado": 48,
+            "fecha_fin": "2026-04-15T00:00:00",
+            "destinatario": "Coordinador de servicios corporativos",
+            "especificaciones": "Plantilla no existente",
+            "estado": "Pendiente",
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 321
+    assert payload["aviso"] is not None
+
+
 def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
     response = client.get(
         "/v1/onboarding/solicitudes-equipo",
@@ -158,30 +257,30 @@ def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
 
 def test_team_onboarding_requests_filters_by_estado(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?estado=Finalizado",
+        "/v1/onboarding/solicitudes-equipo?estado=Pendiente",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 1
-    assert payload[0]["id"] == 558
-    assert payload[0]["estado"] == "Finalizado"
+    assert payload[0]["id"] == 555
+    assert payload[0]["estado"] == "Pendiente"
 
 
 def test_team_onboarding_requests_filters_by_date_range(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-04T00:00:00&fecha_hasta=2026-04-04T23:59:59",
+        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-02T00:00:00&fecha_hasta=2026-04-02T23:59:59",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 1
-    assert payload[0]["id"] == 558
+    assert payload[0]["id"] == 555
 
 
 def test_team_onboarding_requests_invalid_estado_returns_400(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?estado=Abierto",
+        "/v1/onboarding/solicitudes-equipo?estado=Finalizado",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 400
@@ -326,7 +425,7 @@ def test_update_onboarding_request_by_assigned_resolver(client, token_factory):
     assert payload["especificaciones"] == "Equipo asignado"
 
 
-def test_update_onboarding_request_hands_off_to_next_responsible(client, token_factory):
+def test_update_onboarding_request_keeps_destinatario_fixed(client, token_factory):
     jefe_token = token_factory(
         7,
         sub="7",
@@ -343,7 +442,7 @@ def test_update_onboarding_request_hands_off_to_next_responsible(client, token_f
     payload = response.json()
     assert payload["id"] == 556
     assert payload["estado"] == "En proceso"
-    assert payload["destinatario"] == "Coordinador de servicios corporativos"
+    assert payload["destinatario"] == "Jefe de Infraestructura y Mantenimiento"
 
 
 def test_update_onboarding_request_by_rrhh(client, rrhh_token):

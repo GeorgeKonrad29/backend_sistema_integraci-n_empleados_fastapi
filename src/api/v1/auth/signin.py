@@ -32,6 +32,67 @@ from .utils import (
 router = APIRouter()
 
 
+DEFAULT_ONBOARDING_REQUESTS: tuple[tuple[str, int, str], ...] = (
+    ("Asignación de herramientas y accesos base", 3, "Jefe de Infraestructura y Mantenimiento"),
+    ("Programación de inducción inicial", 5, "Gerente Talento Humano"),
+    ("Validación de puesto y logística de ingreso", 7, "Coordinador de servicios corporativos"),
+)
+
+
+async def _register_history(
+    db,
+    id_solicitud: int,
+    tipo_cambio: str,
+    valor_anterior: str | None,
+    valor_nuevo: str | None,
+):
+    await db.prepare(
+        """
+        INSERT INTO HISTORIAL (
+            id_solicitud,
+            fecha_cambio,
+            tipo_cambio,
+            estado_antiguo,
+            nuevo_estado
+        ) VALUES (?, datetime('now'), ?, ?, ?)
+        """
+    ).bind(id_solicitud, tipo_cambio, valor_anterior, valor_nuevo).run()
+
+
+async def _create_default_onboarding_requests(db, user_id: int):
+    for especificacion, due_in_days, destinatario in DEFAULT_ONBOARDING_REQUESTS:
+        result = await db.prepare(
+            """
+            INSERT INTO SOLICITUDES (
+                id_empleado,
+                fecha_creacion,
+                fecha_fin,
+                estado,
+                especificaciones,
+                destinatario
+            ) VALUES (?, datetime('now'), datetime('now', ?), ?, ?, ?)
+            RETURNING id, estado
+            """
+        ).bind(
+            user_id,
+            f"+{due_in_days} days",
+            "Pendiente",
+            especificacion,
+            destinatario,
+        ).first()
+
+        if not result:
+            raise HTTPException(status_code=500, detail="No se pudo crear solicitud predeterminada")
+
+        await _register_history(
+            db=db,
+            id_solicitud=int(result.id),
+            tipo_cambio="CREACION",
+            valor_anterior=None,
+            valor_nuevo=str(result.estado),
+        )
+
+
 @router.post("/signup", response_model=SignupResponse)
 async def signup(
     payload: SignupRequest,
@@ -78,6 +139,19 @@ async def signup(
 
     if not created_user:
         raise HTTPException(status_code=500, detail="No se pudo crear el usuario")
+
+    try:
+        await _create_default_onboarding_requests(
+            db=db,
+            user_id=int(created_user.id),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creando solicitudes predeterminadas: {e}",
+        )
 
     now_ts = int(time.time())
     expires_at = now_ts + ACTIVATION_TOKEN_TTL_SECONDS
