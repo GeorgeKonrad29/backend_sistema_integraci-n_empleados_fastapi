@@ -21,6 +21,7 @@ app.add_middleware(
         "http://localhost:3000",  # Para desarrollo local
         "http://localhost:5173",  # Para Vite en desarrollo
     ],
+    allow_origin_regex=r"https://front-onboarding(?:-[a-z0-9-]+)?\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],  # Permite todos los métodos (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Permite todos los headers
