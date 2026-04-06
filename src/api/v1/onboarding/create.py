@@ -4,10 +4,18 @@ from .common import _clean_row_dict, _register_history, _row_to_dict
 
 try:
     from models.onboarding import OnboardingRequest, OnboardingResponse
-    from utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from utils import (
+        can_create_onboarding_for_employee,
+        get_current_token_payload,
+        get_payload_cargo,
+    )
 except ImportError:
     from ....models.onboarding import OnboardingRequest, OnboardingResponse
-    from ....utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from ....utils import (
+        can_create_onboarding_for_employee,
+        get_current_token_payload,
+        get_payload_cargo,
+    )
 
 router = APIRouter()
 
@@ -28,9 +36,7 @@ async def create_onboarding_request(
     aviso: str | None = None
 
     try:
-        creator_cargo = token_payload.get("cargo")
-        if creator_cargo is None:
-            raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+        creator_cargo = get_payload_cargo(token_payload)
 
         user_check = await db.prepare("SELECT id, cargo FROM USUARIO WHERE id = ? LIMIT 1").bind(payload.id_empleado).first()
 
@@ -40,24 +46,8 @@ async def create_onboarding_request(
                 detail=f"Error: El empleado con ID {payload.id_empleado} no existe."
             )
 
-        rrhh_cargos = set(ROLE_CARGO_ACCESS.get("rrhh", []))
-        can_create = int(creator_cargo) in rrhh_cargos
-
-        if not can_create:
-            empleado_cargo = getattr(user_check, "cargo", None)
-            if empleado_cargo is None:
-                raise HTTPException(
-                    status_code=403,
-                    detail="No tiene permisos para crear solicitudes para este empleado",
-                )
-
-            jefe_info = await db.prepare(
-                "SELECT id_jefe_inmediato FROM JERARQUIA WHERE id = ? LIMIT 1"
-            ).bind(empleado_cargo).first()
-
-            can_create = bool(
-                jefe_info and getattr(jefe_info, "id_jefe_inmediato", None) == int(creator_cargo)
-            )
+        empleado_cargo = getattr(user_check, "cargo", None)
+        can_create = await can_create_onboarding_for_employee(db, creator_cargo, empleado_cargo)
 
         if not can_create:
             raise HTTPException(

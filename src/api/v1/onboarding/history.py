@@ -4,10 +4,10 @@ from .common import _clean_row_dict, _row_to_dict, _rows_to_history_response_lis
 
 try:
     from models.onboarding import OnboardingHistoryResponse
-    from utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from utils import can_view_onboarding_history, get_current_token_payload, get_payload_cargo
 except ImportError:
     from ....models.onboarding import OnboardingHistoryResponse
-    from ....utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from ....utils import can_view_onboarding_history, get_current_token_payload, get_payload_cargo
 
 router = APIRouter()
 
@@ -21,9 +21,7 @@ async def get_onboarding_request_history(
     env = req.scope["env"]
     db = env.dataBase
 
-    user_cargo = token_payload.get("cargo")
-    if user_cargo is None:
-        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+    user_cargo = get_payload_cargo(token_payload)
 
     try:
         solicitud = await db.prepare(
@@ -45,35 +43,18 @@ async def get_onboarding_request_history(
     solicitud_dict = _clean_row_dict(_row_to_dict(solicitud))
     cargo_empleado = getattr(solicitud, "cargo_empleado", None)
 
-    try:
-        cargo_info = await db.prepare(
-            "SELECT nombre_cargo, area FROM JERARQUIA WHERE id = ? LIMIT 1"
-        ).bind(user_cargo).first()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo cargo del usuario: {str(e)}")
-
-    if not cargo_info:
-        raise HTTPException(status_code=404, detail="No se encontró el cargo del usuario en jerarquía")
-
-    nombre_cargo = str(cargo_info.nombre_cargo or "").strip().lower()
-    area = str(cargo_info.area or "").strip().lower()
     destinatario_actual = str(solicitud_dict.get("destinatario") or "").strip().lower()
-    rrhh_cargos = set(ROLE_CARGO_ACCESS.get("rrhh", []))
+    try:
+        can_view = await can_view_onboarding_history(
+            db,
+            user_cargo,
+            destinatario_actual,
+            cargo_empleado,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error validando política de acceso: {str(e)}")
 
-    is_rrhh = int(user_cargo) in rrhh_cargos
-    is_destinatario = destinatario_actual and destinatario_actual in {nombre_cargo, area}
-
-    is_direct_boss = False
-    if cargo_empleado is not None:
-        try:
-            jefe_info = await db.prepare(
-                "SELECT id_jefe_inmediato FROM JERARQUIA WHERE id = ? LIMIT 1"
-            ).bind(cargo_empleado).first()
-            is_direct_boss = bool(jefe_info and getattr(jefe_info, "id_jefe_inmediato", None) == int(user_cargo))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error validando jerarquía: {str(e)}")
-
-    if not (is_rrhh or is_destinatario or is_direct_boss):
+    if not can_view:
         raise HTTPException(status_code=403, detail="No tiene permisos para ver el historial de esta solicitud")
 
     try:

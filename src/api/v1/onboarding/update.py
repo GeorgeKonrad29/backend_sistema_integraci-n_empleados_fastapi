@@ -4,10 +4,10 @@ from .common import _clean_row_dict, _register_history, _row_to_dict
 
 try:
     from models.onboarding import OnboardingResponse, OnboardingUpdateRequest
-    from utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from utils import can_update_onboarding_request, get_current_token_payload, get_payload_cargo
 except ImportError:
     from ....models.onboarding import OnboardingResponse, OnboardingUpdateRequest
-    from ....utils import ROLE_CARGO_ACCESS, get_current_token_payload
+    from ....utils import can_update_onboarding_request, get_current_token_payload, get_payload_cargo
 
 router = APIRouter()
 
@@ -43,29 +43,9 @@ async def update_onboarding_request(
 
     current_dict = _clean_row_dict(_row_to_dict(current))
 
-    user_cargo = token_payload.get("cargo")
-    if user_cargo is None:
-        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
-
-    try:
-        cargo_info = await db.prepare(
-            "SELECT nombre_cargo, area FROM JERARQUIA WHERE id = ? LIMIT 1"
-        ).bind(user_cargo).first()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error obteniendo cargo del usuario: {str(e)}")
-
-    if not cargo_info:
-        raise HTTPException(status_code=404, detail="No se encontró el cargo del usuario en jerarquía")
-
-    nombre_cargo = str(cargo_info.nombre_cargo or "").strip().lower()
-    area = str(cargo_info.area or "").strip().lower()
+    user_cargo = get_payload_cargo(token_payload)
     destinatario_actual = str(current_dict.get("destinatario") or "").strip().lower()
-    rrhh_cargos = set(ROLE_CARGO_ACCESS.get("rrhh", []))
-
-    can_edit = (
-        int(user_cargo) in rrhh_cargos
-        or (destinatario_actual and destinatario_actual in {nombre_cargo, area})
-    )
+    can_edit = await can_update_onboarding_request(db, user_cargo, destinatario_actual)
     if not can_edit:
         raise HTTPException(status_code=403, detail="No tiene permisos para actualizar esta solicitud")
 

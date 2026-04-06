@@ -23,9 +23,92 @@ PERMISSION_ROLES: dict[str, list[str]] = {
     "auth.signup": ["rrhh"],
     "onboarding.crear": ["rrhh"],
     "onboarding.listar": ["rrhh"],
+    "onboarding.dotacion.crear": ["rrhh"],
     "puestos.asignar": ["servicios_generales"],
     "cargos.listar": ["rrhh", "inventario"],
 }
+
+
+def get_payload_cargo(payload: dict) -> int:
+    cargo = payload.get("cargo")
+    if cargo is None:
+        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+    return int(cargo)
+
+
+def is_rrhh_cargo(cargo_id: int) -> bool:
+    return int(cargo_id) in set(ROLE_CARGO_ACCESS.get("rrhh", []))
+
+
+async def has_direct_reports(db, cargo_id: int) -> bool:
+    row = await db.prepare(
+        "SELECT id FROM JERARQUIA WHERE id_jefe_inmediato = ? LIMIT 1"
+    ).bind(cargo_id).first()
+    return bool(row)
+
+
+async def get_cargo_name_area(db, cargo_id: int) -> tuple[str, str] | None:
+    row = await db.prepare(
+        "SELECT nombre_cargo, area FROM JERARQUIA WHERE id = ? LIMIT 1"
+    ).bind(cargo_id).first()
+    if not row:
+        return None
+    return (str(row.nombre_cargo or "").strip(), str(row.area or "").strip())
+
+
+async def is_direct_boss_of_cargo(db, boss_cargo_id: int, employee_cargo_id: int) -> bool:
+    row = await db.prepare(
+        "SELECT id_jefe_inmediato FROM JERARQUIA WHERE id = ? LIMIT 1"
+    ).bind(employee_cargo_id).first()
+    if not row:
+        return False
+    return getattr(row, "id_jefe_inmediato", None) == int(boss_cargo_id)
+
+
+async def destination_matches_user_cargo(db, cargo_id: int, destinatario: str | None) -> bool:
+    if not destinatario:
+        return False
+    cargo_info = await get_cargo_name_area(db, int(cargo_id))
+    if not cargo_info:
+        return False
+    nombre_cargo, area = cargo_info
+    target = str(destinatario).strip().lower()
+    return bool(target and target in {nombre_cargo.lower(), area.lower()})
+
+
+async def can_create_onboarding_for_employee(db, creator_cargo_id: int, employee_cargo_id: int | None) -> bool:
+    if is_rrhh_cargo(creator_cargo_id):
+        return True
+    if employee_cargo_id is None:
+        return False
+    return await is_direct_boss_of_cargo(db, creator_cargo_id, int(employee_cargo_id))
+
+
+async def can_manage_dotacion(db, user_cargo_id: int) -> bool:
+    if is_rrhh_cargo(user_cargo_id):
+        return True
+    return await has_direct_reports(db, user_cargo_id)
+
+
+async def can_update_onboarding_request(db, user_cargo_id: int, destinatario: str | None) -> bool:
+    if is_rrhh_cargo(user_cargo_id):
+        return True
+    return await destination_matches_user_cargo(db, user_cargo_id, destinatario)
+
+
+async def can_view_onboarding_history(
+    db,
+    user_cargo_id: int,
+    destinatario: str | None,
+    employee_cargo_id: int | None,
+) -> bool:
+    if is_rrhh_cargo(user_cargo_id):
+        return True
+    if await destination_matches_user_cargo(db, user_cargo_id, destinatario):
+        return True
+    if employee_cargo_id is not None and await is_direct_boss_of_cargo(db, user_cargo_id, int(employee_cargo_id)):
+        return True
+    return False
 
 
 async def get_jwt_secret(req: Request) -> str:
