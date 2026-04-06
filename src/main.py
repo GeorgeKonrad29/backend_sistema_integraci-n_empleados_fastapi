@@ -17,7 +17,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://front-onboarding-il7a.vercel.app/",
+        "https://front-onboarding-il7a.vercel.app",
         "http://localhost:3000",  # Para desarrollo local
         "http://localhost:5173",  # Para Vite en desarrollo
     ],
