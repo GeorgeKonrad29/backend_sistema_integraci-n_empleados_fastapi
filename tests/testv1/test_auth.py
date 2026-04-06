@@ -25,6 +25,17 @@ def test_auth_me_returns_authenticated_user(client, rrhh_token):
     assert payload["user"]["cargo"] == 48
 
 
+def test_auth_logout_returns_ok_with_token(client, rrhh_token):
+    response = client.post(
+        "/v1/auth/logout",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["message"] == "Logout exitoso"
+
+
 def test_auth_cargos_requires_jwt_and_returns_list(client, rrhh_token):
     response = client.get(
         "/v1/auth/cargos",
@@ -121,4 +132,9 @@ def test_auth_signup_without_token_returns_401(client):
 
 def test_auth_cargos_without_token_returns_401(client):
     response = client.get("/v1/auth/cargos")
+    assert response.status_code == 401
+
+
+def test_auth_logout_without_token_returns_401(client):
+    response = client.post("/v1/auth/logout")
     assert response.status_code == 401

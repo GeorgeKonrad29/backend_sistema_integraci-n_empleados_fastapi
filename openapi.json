@@ -1,0 +1,1605 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sistema de Integración de Empleados",
+    "description": "API para gestión de empleados, solicitudes y jerarquía",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Endpoint de login. Valida credenciales contra tabla USUARIO.",
+        "operationId": "login_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get Current User",
+        "description": "Obtiene la información del usuario actual basado en el token JWT.",
+        "operationId": "get_current_user_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Cierre de sesión lógico para cliente frontend.\nEn JWT stateless el cliente debe descartar el token.",
+        "operationId": "logout_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/signup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Signup",
+        "description": "Endpoint de registro. Crea usuario pendiente y genera enlace de activación.",
+        "operationId": "signup_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/auth/activate-password": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Activate Password Form",
+        "description": "Muestra formulario HTML para activar contraseña.",
+        "operationId": "activate_password_form_v1_auth_activate_password_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Activate Password",
+        "description": "Define la contraseña final usando el token generado en signup.",
+        "operationId": "activate_password_v1_auth_activate_password_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivatePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivatePasswordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/cargos": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get Cargos",
+        "operationId": "get_cargos_v1_auth_cargos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JerarquiaResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Cargos V1 Auth Cargos Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/puesto-trabajo/asignar": {
+      "post": {
+        "tags": [
+          "PuestoTrabajo"
+        ],
+        "summary": "Assign Workstation",
+        "operationId": "assign_workstation_v1_puesto_trabajo_asignar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PuestoTrabajoAsignacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PuestoTrabajoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/puesto-trabajo/mapa": {
+      "get": {
+        "tags": [
+          "PuestoTrabajo"
+        ],
+        "summary": "Get Workstation Map",
+        "operationId": "get_workstation_map_v1_puesto_trabajo_mapa_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/puesto-trabajo/ocupadas": {
+      "get": {
+        "tags": [
+          "PuestoTrabajo"
+        ],
+        "summary": "Get Occupied Workstations",
+        "operationId": "get_occupied_workstations_v1_puesto_trabajo_ocupadas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/onboarding/dotacion": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Create Dotacion Template",
+        "description": "Crea una plantilla en DOTACION.\nAcceso permitido para RRHH o cargos que sean jefe inmediato de al menos un cargo.",
+        "operationId": "create_dotacion_template_v1_onboarding_dotacion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DotacionTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DotacionTemplateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/onboarding/": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List Onboarding Requests",
+        "operationId": "list_onboarding_requests_v1_onboarding__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OnboardingResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Onboarding Requests V1 Onboarding  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Create Onboarding Request",
+        "description": "Crea una nueva solicitud de onboarding.\nAcceso permitido para RRHH o para el jefe inmediato del empleado.\nSi la plantilla (especificaciones) no existe en DOTACION, se crea y se informa en \"aviso\".",
+        "operationId": "create_onboarding_request_v1_onboarding__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/onboarding/solicitudes-equipo": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List Team Onboarding Requests",
+        "operationId": "list_team_onboarding_requests_v1_onboarding_solicitudes_equipo_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnboardingResponse"
+                  },
+                  "title": "Response List Team Onboarding Requests V1 Onboarding Solicitudes Equipo Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/solicitudes-asignadas": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List Assigned Onboarding Requests",
+        "operationId": "list_assigned_onboarding_requests_v1_onboarding_solicitudes_asignadas_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnboardingResponse"
+                  },
+                  "title": "Response List Assigned Onboarding Requests V1 Onboarding Solicitudes Asignadas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/{solicitud_id}": {
+      "patch": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Update Onboarding Request",
+        "operationId": "update_onboarding_request_v1_onboarding__solicitud_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "solicitud_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Solicitud Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/solicitudes/{solicitud_id}/historial": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Onboarding Request History",
+        "operationId": "get_onboarding_request_history_v1_onboarding_solicitudes__solicitud_id__historial_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "solicitud_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Solicitud Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnboardingHistoryResponse"
+                  },
+                  "title": "Response Get Onboarding Request History V1 Onboarding Solicitudes  Solicitud Id  Historial Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Root",
+        "operationId": "root_v1__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/hi/{name}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Say Hi",
+        "operationId": "say_hi_v1_hi__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/env": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Env",
+        "operationId": "env_v1_env_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/database/tables": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get Database Tables",
+        "operationId": "get_database_tables_v1_database_tables_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActivatePasswordRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "contrasena": {
+            "type": "string",
+            "title": "Contrasena"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "contrasena"
+        ],
+        "title": "ActivatePasswordRequest",
+        "description": "Modelo para activar cuenta definiendo contraseña"
+      },
+      "ActivatePasswordResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "ActivatePasswordResponse",
+        "description": "Modelo de respuesta de activación"
+      },
+      "DotacionTemplateRequest": {
+        "properties": {
+          "encargado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encargado"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo",
+            "default": "Onboarding"
+          },
+          "especificacion": {
+            "type": "string",
+            "title": "Especificacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "especificacion"
+        ],
+        "title": "DotacionTemplateRequest",
+        "description": "Modelo para crear una plantilla en DOTACION"
+      },
+      "DotacionTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "encargado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Encargado"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "especificacion": {
+            "type": "string",
+            "title": "Especificacion"
+          },
+          "aviso": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "especificacion"
+        ],
+        "title": "DotacionTemplateResponse",
+        "description": "Modelo de respuesta de plantilla creada en DOTACION"
+      },
+      "EstadoSolicitud": {
+        "type": "string",
+        "enum": [
+          "Pendiente",
+          "En proceso",
+          "Finalizado"
+        ],
+        "title": "EstadoSolicitud"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JerarquiaResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre_cargo": {
+            "type": "string",
+            "title": "Nombre Cargo"
+          },
+          "area": {
+            "type": "string",
+            "title": "Area"
+          },
+          "id_jefe_inmediato": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Jefe Inmediato"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre_cargo",
+          "area"
+        ],
+        "title": "JerarquiaResponse",
+        "description": "Modelo de respuesta para cargos/jerarquía"
+      },
+      "LoginRequest": {
+        "properties": {
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "contrasena": {
+            "type": "string",
+            "title": "Contrasena"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correo",
+          "contrasena"
+        ],
+        "title": "LoginRequest",
+        "description": "Modelo para solicitud de login"
+      },
+      "LoginResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "user": {
+            "$ref": "#/components/schemas/LoginUser"
+          },
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "user",
+          "access_token",
+          "expires_in"
+        ],
+        "title": "LoginResponse",
+        "description": "Modelo de respuesta de login"
+      },
+      "LoginUser": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "rol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rol"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "correo",
+          "nombre"
+        ],
+        "title": "LoginUser",
+        "description": "Modelo de usuario retornado en respuesta"
+      },
+      "OnboardingHistoryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "id_solicitud": {
+            "type": "integer",
+            "title": "Id Solicitud"
+          },
+          "fecha_cambio": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Cambio"
+          },
+          "tipo_cambio": {
+            "type": "string",
+            "title": "Tipo Cambio"
+          },
+          "estado_antiguo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Antiguo"
+          },
+          "nuevo_estado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nuevo Estado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "id_solicitud",
+          "fecha_cambio",
+          "tipo_cambio"
+        ],
+        "title": "OnboardingHistoryResponse",
+        "description": "Modelo para eventos del historial de una solicitud"
+      },
+      "OnboardingRequest": {
+        "properties": {
+          "id_empleado": {
+            "type": "integer",
+            "title": "Id Empleado"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Fin"
+          },
+          "destinatario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destinatario"
+          },
+          "especificaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Especificaciones"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoSolicitud",
+            "default": "Pendiente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_empleado",
+          "fecha_fin"
+        ],
+        "title": "OnboardingRequest",
+        "description": "modelo para el request de la solicitud del onboarding"
+      },
+      "OnboardingResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "id_empleado": {
+            "type": "integer",
+            "title": "Id Empleado"
+          },
+          "fecha_creacion": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Creacion"
+          },
+          "fecha_fin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Fin"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoSolicitud"
+          },
+          "especificaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Especificaciones"
+          },
+          "destinatario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destinatario"
+          },
+          "aviso": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "id_empleado",
+          "fecha_creacion",
+          "estado"
+        ],
+        "title": "OnboardingResponse",
+        "description": "Modelo para el response de la solicitud del onboarding"
+      },
+      "OnboardingUpdateRequest": {
+        "properties": {
+          "fecha_fin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Fin"
+          },
+          "destinatario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destinatario"
+          },
+          "especificaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Especificaciones"
+          },
+          "estado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoSolicitud"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "OnboardingUpdateRequest",
+        "description": "modelo para actualización parcial de una solicitud de onboarding"
+      },
+      "PuestoTrabajoAsignacionRequest": {
+        "properties": {
+          "id_empleado": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Empleado"
+          },
+          "piso": {
+            "type": "integer",
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Piso"
+          },
+          "fila": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Fila"
+          },
+          "columna": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Columna"
+          },
+          "tipo_puesto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Puesto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "piso",
+          "fila",
+          "columna"
+        ],
+        "title": "PuestoTrabajoAsignacionRequest"
+      },
+      "PuestoTrabajoResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "id_empleado": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Empleado"
+          },
+          "coordenadas": {
+            "type": "string",
+            "title": "Coordenadas"
+          },
+          "piso": {
+            "type": "integer",
+            "title": "Piso"
+          },
+          "fila": {
+            "type": "integer",
+            "title": "Fila"
+          },
+          "columna": {
+            "type": "integer",
+            "title": "Columna"
+          },
+          "tipo_puesto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo Puesto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "coordenadas",
+          "piso",
+          "fila",
+          "columna"
+        ],
+        "title": "PuestoTrabajoResponse"
+      },
+      "SignupRequest": {
+        "properties": {
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "rol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rol",
+            "default": "Operador"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correo",
+          "nombre"
+        ],
+        "title": "SignupRequest",
+        "description": "Modelo para solicitud de registro"
+      },
+      "SignupResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "user": {
+            "$ref": "#/components/schemas/LoginUser"
+          },
+          "activation_link": {
+            "type": "string",
+            "title": "Activation Link"
+          },
+          "email_sent": {
+            "type": "boolean",
+            "title": "Email Sent",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message",
+          "user",
+          "activation_link"
+        ],
+        "title": "SignupResponse",
+        "description": "Modelo de respuesta de registro"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

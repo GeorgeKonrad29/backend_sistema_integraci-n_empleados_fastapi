@@ -106,3 +106,18 @@ async def get_current_user(
             "cargo": user.cargo,
         },
     }
+
+
+@router.post("/logout")
+async def logout(
+    req: Request,
+    token_payload: dict = Security(get_current_token_payload),
+):
+    """
+    Cierre de sesión lógico para cliente frontend.
+    En JWT stateless el cliente debe descartar el token.
+    """
+    return {
+        "status": "ok",
+        "message": "Logout exitoso",
+    }
