@@ -3,10 +3,10 @@ from fastapi import APIRouter, HTTPException, Request, Security
 
 try:
     from models import JerarquiaResponse
-    from utils import require_permission
+    from utils import get_current_token_payload
 except ImportError:
     from ....models import JerarquiaResponse
-    from ....utils import require_permission
+    from ....utils import get_current_token_payload
 
 
 router = APIRouter()
@@ -46,7 +46,7 @@ def _row_to_cargo_response(row) -> dict:
 @router.get("/cargos", response_model=list[JerarquiaResponse])
 async def get_cargos(
     req: Request,
-    token_payload: dict = Security(require_permission("cargos.listar")),
+    token_payload: dict = Security(get_current_token_payload),
 ):
     env = req.scope["env"]
     db = env.dataBase
@@ -64,7 +64,7 @@ async def get_cargos(
 async def get_cargo_by_id(
     cargo_id: int,
     req: Request,
-    token_payload: dict = Security(require_permission("cargos.listar")),
+    token_payload: dict = Security(get_current_token_payload),
 ):
     env = req.scope["env"]
     db = env.dataBase
