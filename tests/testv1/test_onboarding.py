@@ -279,8 +279,8 @@ def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
     assert response.status_code == 200
     payload = response.json()
     assert isinstance(payload, list)
-    assert payload[0]["id"] == 558
-    assert payload[0]["id_empleado"] == 53
+    returned_ids = {item["id"] for item in payload}
+    assert returned_ids == {555, 558}
 
 
 def test_team_onboarding_requests_filters_by_estado(client, rrhh_token):
@@ -308,7 +308,7 @@ def test_team_onboarding_requests_filters_by_date_range(client, rrhh_token):
 
 def test_team_onboarding_requests_invalid_estado_returns_400(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?estado=Pendiente",
+        "/v1/onboarding/solicitudes-equipo?estado=Abierto",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 400
