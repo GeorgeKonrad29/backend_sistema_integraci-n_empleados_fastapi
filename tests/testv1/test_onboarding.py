@@ -114,6 +114,34 @@ def test_onboarding_list_returns_requests():
     assert result[0]["id"] == 321
 
 
+def test_my_onboarding_requests_returns_only_authenticated_user_requests(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/mis-solicitudes",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload, list)
+    assert len(payload) == 2
+    assert all(item["id_empleado"] == 48 for item in payload)
+
+
+def test_my_onboarding_requests_filters_by_estado(client, rrhh_token):
+    response = client.get(
+        "/v1/onboarding/mis-solicitudes?estado=En%20proceso",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) == 1
+    assert payload[0]["id"] == 322
+
+
+def test_my_onboarding_requests_without_token_returns_401(client):
+    response = client.get("/v1/onboarding/mis-solicitudes")
+    assert response.status_code == 401
+
+
 def test_onboarding_create_without_token_returns_401(client):
     response = client.post(
         "/v1/onboarding/",

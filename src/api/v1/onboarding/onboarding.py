@@ -5,6 +5,7 @@ from .dotacion import create_dotacion_template, router as dotacion_router
 from .history import get_onboarding_request_history, router as history_router
 from .list import (
     list_assigned_onboarding_requests,
+    list_my_onboarding_requests,
     list_onboarding_requests,
     list_team_onboarding_requests,
     router as list_router,
@@ -29,6 +30,7 @@ __all__ = [
     "create_dotacion_template",
     "create_onboarding_request",
     "list_onboarding_requests",
+    "list_my_onboarding_requests",
     "list_team_onboarding_requests",
     "list_assigned_onboarding_requests",
     "update_onboarding_request",

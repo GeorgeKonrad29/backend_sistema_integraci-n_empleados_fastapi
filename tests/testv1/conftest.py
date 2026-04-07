@@ -418,6 +418,57 @@ class FakePreparedQuery:
                 filtered = [r for r in filtered if r.fecha_creacion <= fecha_hasta]
 
             return FakeRow(results=filtered)
+        if "from solicitudes" in self.query and "where id_empleado = ?" in self.query:
+            user_id = self.args[0] if len(self.args) > 0 else None
+
+            rows = [
+                FakeRow(
+                    id=321,
+                    id_empleado=48,
+                    fecha_creacion="2026-04-01T00:00:00",
+                    fecha_fin="2026-04-15T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Inducción corporativa",
+                    destinatario="Recursos Humanos",
+                ),
+                FakeRow(
+                    id=322,
+                    id_empleado=48,
+                    fecha_creacion="2026-04-06T00:00:00",
+                    fecha_fin="2026-04-20T00:00:00",
+                    estado="En proceso",
+                    especificaciones="Entrega de credenciales",
+                    destinatario="TI",
+                ),
+                FakeRow(
+                    id=700,
+                    id_empleado=50,
+                    fecha_creacion="2026-04-02T00:00:00",
+                    fecha_fin="2026-04-18T00:00:00",
+                    estado="Pendiente",
+                    especificaciones="Solicitud de otro usuario",
+                    destinatario="RRHH",
+                ),
+            ]
+
+            filtered = [r for r in rows if r.id_empleado == user_id]
+
+            arg_index = 1
+            if "estado = ?" in self.query:
+                estado = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.estado == estado]
+                arg_index += 1
+
+            if "fecha_creacion >= ?" in self.query:
+                fecha_desde = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion >= fecha_desde]
+                arg_index += 1
+
+            if "fecha_creacion <= ?" in self.query:
+                fecha_hasta = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.fecha_creacion <= fecha_hasta]
+
+            return FakeRow(results=filtered)
         if "from historial" in self.query and "where id_solicitud = ?" in self.query:
             solicitud_id = self.args[0] if self.args else None
             if solicitud_id == 556:
