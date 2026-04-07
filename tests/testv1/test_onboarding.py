@@ -482,6 +482,52 @@ def test_update_onboarding_request_without_payload_returns_400(client, rrhh_toke
     assert response.status_code == 400
 
 
+def test_advance_onboarding_request_state_moves_to_next_state(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.post(
+        "/v1/onboarding/solicitudes/556/estado/siguiente",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 556
+    assert payload["estado"] == "En proceso"
+
+
+def test_advance_onboarding_request_state_in_final_returns_400(client, rrhh_token):
+    response = client.post(
+        "/v1/onboarding/solicitudes/557/estado/siguiente",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
+def test_advance_user_onboarding_state_moves_to_next_state(client, rrhh_token):
+    response = client.post(
+        "/v1/onboarding/usuarios/48/estado-onboarding/siguiente",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 48
+    assert payload["estado_anterior"] == "Pendiente"
+    assert payload["estado_actual"] == "En proceso"
+
+
+def test_advance_user_onboarding_state_in_final_returns_400(client, rrhh_token):
+    response = client.post(
+        "/v1/onboarding/usuarios/49/estado-onboarding/siguiente",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
 def test_onboarding_history_visible_for_rrhh(client, rrhh_token):
     response = client.get(
         "/v1/onboarding/solicitudes/321/historial",

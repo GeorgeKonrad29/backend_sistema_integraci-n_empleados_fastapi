@@ -151,6 +151,24 @@ class FakePreparedQuery:
                     especificaciones="Inducción corporativa",
                     destinatario="Recursos Humanos",
                 )
+            if solicitud_id == 557:
+                return FakeRow(
+                    id=557,
+                    id_empleado=52,
+                    fecha_creacion="2026-04-04T00:00:00",
+                    fecha_fin="2026-04-25T00:00:00",
+                    estado="Finalizado",
+                    especificaciones="Adecuación de puesto físico en oficina",
+                    destinatario="Mantenimiento",
+                )
+            return None
+
+        if "select id, estado_onboarding from usuario where id = ? limit 1" in self.query:
+            user_id = self.args[0] if self.args else None
+            if user_id == 48:
+                return FakeRow(id=48, estado_onboarding="Pendiente")
+            if user_id == 49:
+                return FakeRow(id=49, estado_onboarding="Finalizado")
             return None
 
         if "from solicitudes s join usuario u on u.id = s.id_empleado where s.id = ? limit 1" in self.query:
@@ -202,6 +220,24 @@ class FakePreparedQuery:
                 estado=self.args[1] if len(self.args) > 1 else "Pendiente",
                 especificaciones=self.args[2] if len(self.args) > 2 else "Asignar hardware y credenciales de acceso",
                 destinatario=self.args[3] if len(self.args) > 3 else "Jefe de Infraestructura y Mantenimiento",
+            )
+
+        if "update solicitudes set estado = ? where id = ? returning" in self.query:
+            solicitud_id = self.args[1] if len(self.args) > 1 else 556
+            return FakeRow(
+                id=solicitud_id,
+                id_empleado=51,
+                fecha_creacion="2026-04-03T00:00:00",
+                fecha_fin="2026-04-20T00:00:00",
+                estado=self.args[0] if len(self.args) > 0 else "En proceso",
+                especificaciones="Asignar hardware y credenciales de acceso",
+                destinatario="Jefe de Infraestructura y Mantenimiento",
+            )
+
+        if "update usuario set estado_onboarding = ? where id = ? returning id, estado_onboarding" in self.query:
+            return FakeRow(
+                id=self.args[1] if len(self.args) > 1 else 48,
+                estado_onboarding=self.args[0] if len(self.args) > 0 else "En proceso",
             )
 
         if "select id from puesto_de_trabajo where coordenadas = ? limit 1" in self.query:

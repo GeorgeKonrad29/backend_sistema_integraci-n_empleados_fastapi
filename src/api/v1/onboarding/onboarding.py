@@ -9,7 +9,12 @@ from .list import (
     list_team_onboarding_requests,
     router as list_router,
 )
-from .update import router as update_router, update_onboarding_request
+from .update import (
+    advance_onboarding_request_state,
+    advance_user_onboarding_state,
+    router as update_router,
+    update_onboarding_request,
+)
 
 router = APIRouter()
 router.include_router(dotacion_router)
@@ -26,5 +31,7 @@ __all__ = [
     "list_team_onboarding_requests",
     "list_assigned_onboarding_requests",
     "update_onboarding_request",
+    "advance_onboarding_request_state",
+    "advance_user_onboarding_state",
     "get_onboarding_request_history",
 ]
