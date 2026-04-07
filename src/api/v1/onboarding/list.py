@@ -205,11 +205,11 @@ async def list_assigned_onboarding_requests(
     if not nombre_cargo and not area:
         return []
 
-    valid_states = {"En proceso", "Finalizado", "Rechazado"}
+    valid_states = {"En proceso"}
     if estado is not None and estado not in valid_states:
         raise HTTPException(
             status_code=400,
-            detail=f"Estado inválido. Use uno de: {sorted(valid_states)}",
+            detail="En solicitudes asignadas solo se permite estado='En proceso'",
         )
 
     def _validate_iso_datetime(value: str | None, field_name: str) -> str | None:
@@ -231,13 +231,9 @@ async def list_assigned_onboarding_requests(
 
     where_clauses = [
         "(LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)) OR LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)))",
-        "s.estado != ?",
+        "s.estado = ?",
     ]
-    bindings: list[str] = [nombre_cargo, area, "Pendiente"]
-
-    if estado is not None:
-        where_clauses.append("s.estado = ?")
-        bindings.append(estado)
+    bindings: list[str] = [nombre_cargo, area, "En proceso"]
 
     if fecha_desde_iso is not None:
         where_clauses.append("s.fecha_creacion >= ?")

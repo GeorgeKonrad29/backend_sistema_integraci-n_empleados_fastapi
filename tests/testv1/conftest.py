@@ -378,7 +378,7 @@ class FakePreparedQuery:
                     id_empleado=51,
                     fecha_creacion="2026-04-03T00:00:00",
                     fecha_fin="2026-04-20T00:00:00",
-                    estado="Pendiente",
+                    estado="En proceso",
                     especificaciones="Asignar hardware y credenciales de acceso",
                     destinatario="Jefe de Infraestructura y Mantenimiento",
                 ),
