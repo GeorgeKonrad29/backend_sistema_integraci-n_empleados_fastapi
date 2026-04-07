@@ -1,6 +1,12 @@
+import json
 from fastapi import APIRouter, HTTPException, Request, Security
 
 from .common import _clean_row_dict, _register_history, _row_to_dict
+
+try:
+    from utils.resend import fetch as fetch_resend_api_key
+except ImportError:
+    from ....utils.resend import fetch as fetch_resend_api_key
 
 try:
     from models.onboarding import OnboardingResponse, OnboardingUpdateRequest
@@ -20,6 +26,119 @@ except ImportError:
 router = APIRouter()
 
 _STATE_FLOW = ["Pendiente", "En proceso", "Finalizado"]
+RESEND_FROM_EMAIL = "onboarding@resend.dev"
+TEST_RECIPIENT_EMAIL = "jorgeluis57134@gmail.com"
+
+
+def _resolve_resend_from_email(req: Request) -> str:
+    env = req.scope["env"]
+    configured = getattr(env, "RESEND_FROM_EMAIL", None)
+    if isinstance(configured, str) and configured.strip():
+        return configured.strip()
+    return RESEND_FROM_EMAIL
+
+
+async def _get_receiver_user(db, user_id: int | None) -> dict | None:
+    if user_id is None:
+        return None
+
+    try:
+        user_row = await db.prepare(
+            "SELECT id, nombre, correo, rol, cargo FROM USUARIO WHERE id = ? LIMIT 1"
+        ).bind(int(user_id)).first()
+    except Exception:
+        return None
+
+    if not user_row:
+        return None
+
+    user_dict = _clean_row_dict(_row_to_dict(user_row))
+    user_dict["nombre"] = getattr(user_row, "nombre", None)
+    user_dict["correo"] = getattr(user_row, "correo", None)
+    user_dict["rol"] = getattr(user_row, "rol", None)
+    user_dict["cargo"] = getattr(user_row, "cargo", None)
+    return user_dict
+
+
+async def _send_en_proceso_notification_email(
+    req: Request,
+    solicitud: dict,
+    receiver_user: dict | None,
+    encargado_role: str,
+    encargado_name: str,
+) -> bool:
+    try:
+        env = req.scope["env"]
+        resend_api_key = await fetch_resend_api_key(req, env)
+    except Exception:
+        return False
+
+    from_email = _resolve_resend_from_email(req)
+    to_email = TEST_RECIPIENT_EMAIL
+    if not resend_api_key or not from_email or not to_email:
+        return False
+
+    try:
+        from pyodide.http import pyfetch
+    except Exception:
+        return False
+
+    receiver_name = None if not receiver_user else receiver_user.get("nombre")
+    receiver_email = None if not receiver_user else receiver_user.get("correo")
+    receiver_role = None if not receiver_user else receiver_user.get("rol")
+    receiver_id = None if not receiver_user else receiver_user.get("id")
+
+    email_payload = {
+        "from": from_email,
+        "to": [to_email],
+        "subject": "Solicitud actualizada a En proceso",
+        "html": (
+            "<p>Una solicitud cambió al estado <strong>En proceso</strong>.</p>"
+            "<p><strong>Encargado</strong><br>"
+            f"Rol: {encargado_role}<br>"
+            f"Nombre: {encargado_name}</p>"
+            "<p><strong>Datos de la solicitud</strong><br>"
+            f"ID: {solicitud.get('id')}<br>"
+            f"ID Empleado: {solicitud.get('id_empleado')}<br>"
+            f"Fecha creación: {solicitud.get('fecha_creacion')}<br>"
+            f"Fecha fin: {solicitud.get('fecha_fin')}<br>"
+            f"Estado: {solicitud.get('estado')}<br>"
+            f"Especificaciones: {solicitud.get('especificaciones')}<br>"
+            f"Destinatario: {solicitud.get('destinatario')}</p>"
+            "<p><strong>Usuario que debe recibirla</strong><br>"
+            f"ID: {receiver_id}<br>"
+            f"Nombre: {receiver_name}<br>"
+            f"Correo: {receiver_email}<br>"
+            f"Rol: {receiver_role}</p>"
+        ),
+    }
+
+    try:
+        response = await pyfetch(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(email_payload),
+        )
+
+        if response.status in [200, 201, 202]:
+            return True
+
+        try:
+            body_text = await response.text()
+        except Exception:
+            body_text = "<sin cuerpo>"
+
+        print(
+            f"[onboarding/update] En-proceso notification rejected. status={response.status} "
+            f"from={from_email} to={to_email} body={body_text}"
+        )
+        return False
+    except Exception:
+        return False
 
 
 def _next_state(current_state: str) -> str:
@@ -134,7 +253,21 @@ async def update_onboarding_request(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error registrando historial: {str(e)}")
 
-    return OnboardingResponse.model_validate(_clean_row_dict(_row_to_dict(updated)))
+    updated_dict = _clean_row_dict(_row_to_dict(updated))
+    notify_en_proceso = str(current_dict.get("estado")) != "En proceso" and str(updated_dict.get("estado")) == "En proceso"
+    if notify_en_proceso:
+        receiver_user = await _get_receiver_user(db, updated_dict.get("id_empleado"))
+        notification_sent = await _send_en_proceso_notification_email(
+            req=req,
+            solicitud=updated_dict,
+            receiver_user=receiver_user,
+            encargado_role=str(token_payload.get("rol") or "No definido"),
+            encargado_name=str(token_payload.get("nombre") or token_payload.get("correo") or "No definido"),
+        )
+        if not notification_sent:
+            print(f"[onboarding/update] En-proceso notification not sent for solicitud_id={solicitud_id}")
+
+    return OnboardingResponse.model_validate(updated_dict)
 
 
 @router.post("/solicitudes/{solicitud_id}/estado/siguiente", response_model=OnboardingResponse)
@@ -193,8 +326,21 @@ async def advance_onboarding_request_state(
         valor_anterior=estado_actual,
         valor_nuevo=estado_siguiente,
     )
+    updated_dict = _clean_row_dict(_row_to_dict(updated))
 
-    return OnboardingResponse.model_validate(_clean_row_dict(_row_to_dict(updated)))
+    if str(estado_siguiente) == "En proceso":
+        receiver_user = await _get_receiver_user(db, updated_dict.get("id_empleado"))
+        notification_sent = await _send_en_proceso_notification_email(
+            req=req,
+            solicitud=updated_dict,
+            receiver_user=receiver_user,
+            encargado_role=str(token_payload.get("rol") or "No definido"),
+            encargado_name=str(token_payload.get("nombre") or token_payload.get("correo") or "No definido"),
+        )
+        if not notification_sent:
+            print(f"[onboarding/update] En-proceso notification not sent for solicitud_id={solicitud_id}")
+
+    return OnboardingResponse.model_validate(updated_dict)
 
 
 @router.post("/usuarios/{usuario_id}/estado-onboarding/siguiente")

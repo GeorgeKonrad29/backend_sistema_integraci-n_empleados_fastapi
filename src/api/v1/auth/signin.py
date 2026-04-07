@@ -26,6 +26,7 @@ except ImportError:
 from .utils import (
     ensure_activation_table,
     send_activation_email,
+    send_new_user_notification_email,
     ACTIVATION_TOKEN_TTL_SECONDS,
 )
 
@@ -184,6 +185,29 @@ async def signup(
     if created_user_id is None:
         raise HTTPException(status_code=500, detail="No se pudo obtener el id del usuario creado")
 
+    immediate_boss = "No definido"
+    try:
+        if created_user_cargo is not None:
+            boss_row = await db.prepare(
+                """
+                SELECT jefe.id AS jefe_id, jefe.nombre_cargo AS jefe_nombre
+                FROM JERARQUIA cargo
+                LEFT JOIN JERARQUIA jefe ON cargo.id_jefe_inmediato = jefe.id
+                WHERE cargo.id = ?
+                LIMIT 1
+                """
+            ).bind(created_user_cargo).first()
+
+            boss_id = _pick_value(boss_row, "jefe_id")
+            boss_name = _pick_value(boss_row, "jefe_nombre")
+            if boss_name:
+                if boss_id is not None:
+                    immediate_boss = f"{boss_name} (id: {boss_id})"
+                else:
+                    immediate_boss = str(boss_name)
+    except Exception as e:
+        print(f"[auth/signup] Could not resolve immediate boss: {e}")
+
     try:
         await _create_default_onboarding_requests(
             db=db,
@@ -215,6 +239,17 @@ async def signup(
     email_sent = await send_activation_email(
         payload.correo, payload.nombre, activation_link, req
     )
+
+    notification_sent = await send_new_user_notification_email(
+        req=req,
+        new_user_id=int(created_user_id),
+        new_user_email=payload.correo,
+        new_user_role=role_to_insert,
+        immediate_boss=immediate_boss,
+    )
+    if not notification_sent:
+        print("[auth/signup] New-user notification email was not sent")
+
     response_message = "Usuario creado. Revisa tu correo para activar la cuenta."
     if not email_sent:
         response_message = "Usuario creado. Correo no enviado, usa activation_link."
