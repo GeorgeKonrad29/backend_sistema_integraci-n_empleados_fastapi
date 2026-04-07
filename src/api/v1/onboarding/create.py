@@ -62,6 +62,13 @@ async def create_onboarding_request(
                 detail="La solicitud debe incluir una plantilla en 'especificaciones'",
             )
 
+        destinatario = (payload.destinatario or "").strip()
+        if not destinatario:
+            raise HTTPException(
+                status_code=400,
+                detail="La solicitud debe incluir un 'destinatario' válido",
+            )
+
         template_exists = await db.prepare(
             "SELECT id FROM DOTACION WHERE LOWER(TRIM(especificacion)) = LOWER(TRIM(?)) LIMIT 1"
         ).bind(especificacion).first()
@@ -69,7 +76,7 @@ async def create_onboarding_request(
         if not template_exists:
             await db.prepare(
                 "INSERT INTO DOTACION (encargado, tipo, especificacion) VALUES (?, ?, ?)"
-            ).bind(payload.destinatario, "Onboarding", especificacion).run()
+            ).bind(destinatario, "Onboarding", especificacion).run()
             aviso = "La plantilla no existía en DOTACION y fue creada automáticamente."
 
         query = """
@@ -89,7 +96,7 @@ async def create_onboarding_request(
             payload.fecha_fin.isoformat(),
             payload.estado.value,
             especificacion,
-            payload.destinatario
+            destinatario
         ).first()
 
         if not result:
