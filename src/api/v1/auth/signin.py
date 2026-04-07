@@ -69,6 +69,9 @@ async def _register_history(
     valor_anterior: str | None,
     valor_nuevo: str | None,
 ):
+    old_value = "" if valor_anterior is None else str(valor_anterior)
+    new_value = "" if valor_nuevo is None else str(valor_nuevo)
+
     await db.prepare(
         """
         INSERT INTO HISTORIAL (
@@ -79,7 +82,7 @@ async def _register_history(
             nuevo_estado
         ) VALUES (?, datetime('now'), ?, ?, ?)
         """
-    ).bind(id_solicitud, tipo_cambio, valor_anterior, valor_nuevo).run()
+    ).bind(id_solicitud, tipo_cambio, old_value, new_value).run()
 
 
 async def _create_default_onboarding_requests(db, user_id: int):
