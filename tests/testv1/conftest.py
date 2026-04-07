@@ -26,6 +26,14 @@ class FakePreparedQuery:
         return self
 
     async def first(self):
+        if "select id, nombre_cargo, area, id_jefe_inmediato from jerarquia where id = ? limit 1" in self.query:
+            cargo_id = self.args[0] if self.args else None
+            if cargo_id == 1:
+                return FakeRow(id=1, nombre_cargo="Asamblea de Socios", area="Máximo Órgano", id_jefe_inmediato=None)
+            if cargo_id == 48:
+                return FakeRow(id=48, nombre_cargo="Gerente Talento Humano", area="Gerencia de talento humano", id_jefe_inmediato=2)
+            return None
+
         if "from usuario where correo = ? limit 1" in self.query:
             correo = self.args[0] if self.args else None
             if correo == "rrhh@sinergia.com":

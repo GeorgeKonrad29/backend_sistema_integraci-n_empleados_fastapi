@@ -47,6 +47,25 @@ def test_auth_cargos_requires_jwt_and_returns_list(client, rrhh_token):
     assert payload[0]["id"] == 1
 
 
+def test_auth_cargo_by_id_returns_item(client, rrhh_token):
+    response = client.get(
+        "/v1/auth/cargos/1",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 1
+    assert payload["nombre_cargo"] == "Asamblea de Socios"
+
+
+def test_auth_cargo_by_id_not_found_returns_404(client, rrhh_token):
+    response = client.get(
+        "/v1/auth/cargos/999",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 404
+
+
 def test_auth_signup_returns_activation_link_for_rrhh(client, rrhh_token, monkeypatch):
     from src.api.v1.auth import signin as signin_module
 
