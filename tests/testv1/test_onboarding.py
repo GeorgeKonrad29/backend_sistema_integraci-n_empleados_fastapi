@@ -528,6 +528,32 @@ def test_advance_user_onboarding_state_in_final_returns_400(client, rrhh_token):
     assert response.status_code == 400
 
 
+def test_reject_onboarding_request_by_assigned_resolver(client, token_factory):
+    infraestructura_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.post(
+        "/v1/onboarding/solicitudes/556/rechazar",
+        headers={"Authorization": f"Bearer {infraestructura_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 556
+    assert payload["estado"] == "Rechazado"
+
+
+def test_reject_onboarding_request_in_final_returns_400(client, rrhh_token):
+    response = client.post(
+        "/v1/onboarding/solicitudes/557/rechazar",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
 def test_onboarding_history_visible_for_rrhh(client, rrhh_token):
     response = client.get(
         "/v1/onboarding/solicitudes/321/historial",

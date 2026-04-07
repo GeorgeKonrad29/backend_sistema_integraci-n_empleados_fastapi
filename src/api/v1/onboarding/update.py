@@ -241,3 +241,66 @@ async def advance_user_onboarding_state(
         "estado_anterior": estado_actual,
         "estado_actual": updated.estado_onboarding,
     }
+
+
+@router.post("/solicitudes/{solicitud_id}/rechazar", response_model=OnboardingResponse)
+async def reject_onboarding_request(
+    solicitud_id: int,
+    req: Request,
+    token_payload: dict = Security(get_current_token_payload),
+):
+    env = req.scope["env"]
+    db = env.dataBase
+
+    try:
+        current = await db.prepare(
+            """
+            SELECT id, id_empleado, fecha_creacion, fecha_fin, estado, especificaciones, destinatario
+            FROM SOLICITUDES
+            WHERE id = ?
+            LIMIT 1
+            """
+        ).bind(solicitud_id).first()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo solicitud: {str(e)}")
+
+    if not current:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+
+    current_dict = _clean_row_dict(_row_to_dict(current))
+    user_cargo = get_payload_cargo(token_payload)
+    destinatario_actual = str(current_dict.get("destinatario") or "").strip().lower()
+    can_edit = await can_update_onboarding_request(db, user_cargo, destinatario_actual)
+    if not can_edit:
+        raise HTTPException(status_code=403, detail="No tiene permisos para actualizar esta solicitud")
+
+    estado_actual = str(current_dict.get("estado") or "")
+    if estado_actual == "Rechazado":
+        raise HTTPException(status_code=400, detail="La solicitud ya está rechazada")
+    if estado_actual == "Finalizado":
+        raise HTTPException(status_code=400, detail="No se puede rechazar una solicitud finalizada")
+
+    try:
+        updated = await db.prepare(
+            """
+            UPDATE SOLICITUDES
+            SET estado = ?
+            WHERE id = ?
+            RETURNING id, id_empleado, fecha_creacion, fecha_fin, estado, especificaciones, destinatario
+            """
+        ).bind("Rechazado", solicitud_id).first()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error rechazando solicitud: {str(e)}")
+
+    if not updated:
+        raise HTTPException(status_code=500, detail="No fue posible rechazar la solicitud")
+
+    await _register_history(
+        db=db,
+        id_solicitud=solicitud_id,
+        tipo_cambio="CAMBIO_ESTADO",
+        valor_anterior=estado_actual,
+        valor_nuevo="Rechazado",
+    )
+
+    return OnboardingResponse.model_validate(_clean_row_dict(_row_to_dict(updated)))

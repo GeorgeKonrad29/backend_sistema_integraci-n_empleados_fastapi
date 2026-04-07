@@ -12,6 +12,7 @@ from .list import (
 from .update import (
     advance_onboarding_request_state,
     advance_user_onboarding_state,
+    reject_onboarding_request,
     router as update_router,
     update_onboarding_request,
 )
@@ -33,5 +34,6 @@ __all__ = [
     "update_onboarding_request",
     "advance_onboarding_request_state",
     "advance_user_onboarding_state",
+    "reject_onboarding_request",
     "get_onboarding_request_history",
 ]

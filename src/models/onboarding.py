@@ -7,6 +7,7 @@ class EstadoSolicitud(str, Enum):
     PENDIENTE = "Pendiente"
     EN_PROCESO = "En proceso"
     FINALIZADO = "Finalizado"
+    RECHAZADO = "Rechazado"
 
 
 class OnboardingRequest(BaseModel):

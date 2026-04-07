@@ -126,7 +126,7 @@ async def list_assigned_onboarding_requests(
     if not nombre_cargo and not area:
         return []
 
-    valid_states = {"Pendiente", "En proceso", "Finalizado"}
+    valid_states = {"Pendiente", "En proceso", "Finalizado", "Rechazado"}
     if estado is not None and estado not in valid_states:
         raise HTTPException(
             status_code=400,
