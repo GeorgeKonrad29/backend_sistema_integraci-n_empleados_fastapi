@@ -38,7 +38,6 @@ DEFAULT_ONBOARDING_REQUESTS: tuple[tuple[str, int, str], ...] = (
     ("Validación de puesto y logística de ingreso", 7, "Coordinador de servicios corporativos"),
 )
 
-
 def _pick_value(row, key: str):
     if row is None:
         return None
@@ -60,6 +59,18 @@ def _pick_value(row, key: str):
         return row[key]
     except Exception:
         return None
+
+
+def _role_from_cargo(cargo_id: int | None) -> str:
+    if cargo_id is None:
+        return "Operador"
+
+    cargo_role_map: dict[int, str] = {
+        2: "Root",
+        48: "Administrador",
+        49: "Encargado de Area",
+    }
+    return cargo_role_map.get(int(cargo_id), "Operador")
 
 
 async def _register_history(
@@ -131,6 +142,7 @@ async def signup(
     """
     env = req.scope["env"]
     db = env.dataBase
+    role_to_insert = _role_from_cargo(payload.cargo)
 
     await ensure_activation_table(db)
 
@@ -156,7 +168,7 @@ async def signup(
         created_user = await db.prepare(
             "INSERT INTO USUARIO (correo, contrasena, nombre, rol, cargo) VALUES (?, ?, ?, ?, ?) RETURNING id, cargo"
         ).bind(
-            payload.correo, placeholder_password, payload.nombre, payload.rol or "Operador", payload.cargo
+            payload.correo, placeholder_password, payload.nombre, role_to_insert, payload.cargo
         ).first()
     except Exception as e:
         raise HTTPException(
@@ -213,7 +225,7 @@ async def signup(
         "user": {
             "id": created_user_id,
             "correo": payload.correo,
-            "rol": payload.rol,
+            "rol": role_to_insert,
             "nombre": payload.nombre,
             "cargo": created_user_cargo,
         },

@@ -149,6 +149,30 @@ def test_auth_signup_without_token_returns_401(client):
     assert response.status_code == 401
 
 
+def test_auth_signup_ignores_role_string_and_uses_cargo(client, rrhh_token, monkeypatch):
+    from src.api.v1.auth import signin as signin_module
+
+    async def fake_send_activation_email(*_args, **_kwargs):
+        return True
+
+    monkeypatch.setattr(signin_module, "send_activation_email", fake_send_activation_email)
+
+    response = client.post(
+        "/v1/auth/signup",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+        json={
+            "nombre": "Usuario Rol Invalido",
+            "correo": "rol.invalido@empresa.com",
+            "contrasena": "",
+            "rol": "Manager",
+            "cargo": 44,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["user"]["rol"] == "Operador"
+
+
 def test_auth_cargos_without_token_returns_401(client):
     response = client.get("/v1/auth/cargos")
     assert response.status_code == 401
