@@ -39,6 +39,29 @@ DEFAULT_ONBOARDING_REQUESTS: tuple[tuple[str, int, str], ...] = (
 )
 
 
+def _pick_value(row, key: str):
+    if row is None:
+        return None
+
+    if hasattr(row, "to_py"):
+        try:
+            row = row.to_py()
+        except Exception:
+            pass
+
+    if isinstance(row, dict):
+        return row.get(key)
+
+    value = getattr(row, key, None)
+    if value is not None:
+        return value
+
+    try:
+        return row[key]
+    except Exception:
+        return None
+
+
 async def _register_history(
     db,
     id_solicitud: int,
@@ -81,15 +104,16 @@ async def _create_default_onboarding_requests(db, user_id: int):
             destinatario,
         ).first()
 
-        if not result:
+        solicitud_id = _pick_value(result, "id")
+        if not solicitud_id:
             raise HTTPException(status_code=500, detail="No se pudo crear solicitud predeterminada")
 
         await _register_history(
             db=db,
-            id_solicitud=int(result.id),
+            id_solicitud=int(solicitud_id),
             tipo_cambio="CREACION",
             valor_anterior=None,
-            valor_nuevo=str(result.estado),
+            valor_nuevo="Pendiente",
         )
 
 
@@ -140,10 +164,15 @@ async def signup(
     if not created_user:
         raise HTTPException(status_code=500, detail="No se pudo crear el usuario")
 
+    created_user_id = _pick_value(created_user, "id")
+    created_user_cargo = _pick_value(created_user, "cargo")
+    if created_user_id is None:
+        raise HTTPException(status_code=500, detail="No se pudo obtener el id del usuario creado")
+
     try:
         await _create_default_onboarding_requests(
             db=db,
-            user_id=int(created_user.id),
+            user_id=int(created_user_id),
         )
     except HTTPException:
         raise
@@ -160,7 +189,7 @@ async def signup(
     try:
         await db.prepare(
             "INSERT OR REPLACE INTO ACTIVACION_USUARIO (user_id, token, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)"
-        ).bind(created_user.id, token, expires_at, now_ts).run()
+        ).bind(created_user_id, token, expires_at, now_ts).run()
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -179,11 +208,11 @@ async def signup(
         "status": "ok",
         "message": response_message,
         "user": {
-            "id": created_user.id,
+            "id": created_user_id,
             "correo": payload.correo,
             "rol": payload.rol,
             "nombre": payload.nombre,
-            "cargo": created_user.cargo,
+            "cargo": created_user_cargo,
         },
         "activation_link": activation_link,
         "email_sent": email_sent,
