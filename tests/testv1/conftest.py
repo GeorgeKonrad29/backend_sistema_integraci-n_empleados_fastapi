@@ -161,6 +161,16 @@ class FakePreparedQuery:
                     especificaciones="Adecuación de puesto físico en oficina",
                     destinatario="Mantenimiento",
                 )
+            if solicitud_id == 559:
+                return FakeRow(
+                    id=559,
+                    id_empleado=51,
+                    fecha_creacion="2026-04-05T00:00:00",
+                    fecha_fin="2026-04-20T00:00:00",
+                    estado="En proceso",
+                    especificaciones="Solicitud en ejecución",
+                    destinatario="Jefe de Infraestructura y Mantenimiento",
+                )
             return None
 
         if "select id, estado_onboarding from usuario where id = ? limit 1" in self.query:

@@ -12,15 +12,19 @@ try:
     from models.onboarding import OnboardingResponse, OnboardingUpdateRequest
     from utils import (
         can_update_onboarding_request,
+        destination_matches_user_cargo,
         get_current_token_payload,
         get_payload_cargo,
+        is_direct_boss_of_cargo,
     )
 except ImportError:
     from ....models.onboarding import OnboardingResponse, OnboardingUpdateRequest
     from ....utils import (
         can_update_onboarding_request,
+        destination_matches_user_cargo,
         get_current_token_payload,
         get_payload_cargo,
+        is_direct_boss_of_cargo,
     )
 
 router = APIRouter()
@@ -297,11 +301,34 @@ async def advance_onboarding_request_state(
     current_dict = _clean_row_dict(_row_to_dict(current))
     user_cargo = get_payload_cargo(token_payload)
     destinatario_actual = str(current_dict.get("destinatario") or "").strip().lower()
-    can_edit = await can_update_onboarding_request(db, user_cargo, destinatario_actual)
-    if not can_edit:
-        raise HTTPException(status_code=403, detail="No tiene permisos para actualizar esta solicitud")
 
     estado_actual = str(current_dict.get("estado") or "")
+
+    employee_cargo_row = await db.prepare(
+        "SELECT id, cargo FROM USUARIO WHERE id = ? LIMIT 1"
+    ).bind(current_dict.get("id_empleado")).first()
+    if not employee_cargo_row:
+        raise HTTPException(status_code=404, detail="No se encontró el empleado de la solicitud")
+
+    employee_cargo = getattr(employee_cargo_row, "cargo", None)
+    if employee_cargo is None:
+        raise HTTPException(status_code=400, detail="El empleado de la solicitud no tiene cargo asignado")
+
+    if estado_actual == "Pendiente":
+        is_direct_boss = await is_direct_boss_of_cargo(db, user_cargo, int(employee_cargo))
+        if not is_direct_boss:
+            raise HTTPException(
+                status_code=403,
+                detail="Solo el jefe inmediato puede pasar la solicitud de Pendiente a En proceso",
+            )
+    elif estado_actual == "En proceso":
+        is_assigned_resolver = await destination_matches_user_cargo(db, user_cargo, destinatario_actual)
+        if not is_assigned_resolver:
+            raise HTTPException(
+                status_code=403,
+                detail="Solo el encargado puede pasar la solicitud de En proceso a Finalizado",
+            )
+
     estado_siguiente = _next_state(estado_actual)
 
     try:
