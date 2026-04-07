@@ -20,9 +20,10 @@ app.add_middleware(
         "https://front-onboarding-il7a.vercel.app",
         "http://localhost:3000",  # Para desarrollo local
         "http://localhost:5173",  # Para Vite en desarrollo
+        "http://127.0.0.1:3000",  # Para desarrollo local alternativo
+        "http://127.0.0.1:5173",  # Para Vite en desarrollo alternativo
     ],
     allow_origin_regex=r"https://front-onboarding(?:-[a-z0-9-]+)?\.vercel\.app",
-    allow_origin_regex=r"http://localhost:(3000|5173)(?:-[a-z0-9-]+)?",
     allow_credentials=True,
     allow_methods=["*"],  # Permite todos los métodos (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Permite todos los headers
