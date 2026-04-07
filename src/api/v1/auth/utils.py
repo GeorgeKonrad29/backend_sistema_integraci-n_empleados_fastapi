@@ -79,6 +79,62 @@ async def send_activation_email(
     except Exception:
         return False
 
+    from_email = _resolve_resend_from_email(req)
+    if not resend_api_key or not from_email:
+        return False
+
+    try:
+        from pyodide.http import pyfetch
+    except Exception:
+        return False
+
+    original_to_email = to_email
+    to_email = TEST_RECIPIENT_EMAIL
+
+    email_payload = {
+        "from": from_email,
+        "to": [to_email],
+        "subject": "Activa tu cuenta",
+        "html": (
+            f"<p>Hola {user_name},</p>"
+            "<p>Tu cuenta fue creada correctamente.</p>"
+            f"<p>Activa tu contraseña aquí: <a href=\"{activation_link}\">Activar cuenta</a></p>"
+            "<p>Este enlace expira en 1 hora.</p>"
+        ),
+    }
+
+    try:
+        if original_to_email != to_email:
+            print(
+                f"[auth/signup] Redirecting activation email for testing. "
+                f"requested_to={original_to_email} forced_to={to_email}"
+            )
+
+        response = await pyfetch(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(email_payload),
+        )
+        if response.status in [200, 201, 202]:
+            return True
+
+        try:
+            body_text = await response.text()
+        except Exception:
+            body_text = "<sin cuerpo>"
+
+        print(
+            f"[auth/signup] Resend rejected email. status={response.status} "
+            f"from={from_email} to={to_email} body={body_text}"
+        )
+        return False
+    except Exception:
+        return False
+
 
 async def send_new_user_notification_email(
     req: Request,
@@ -138,62 +194,6 @@ async def send_new_user_notification_email(
 
         print(
             f"[auth/signup] New-user notification rejected. status={response.status} "
-            f"from={from_email} to={to_email} body={body_text}"
-        )
-        return False
-    except Exception:
-        return False
-
-    from_email = _resolve_resend_from_email(req)
-    if not resend_api_key or not from_email:
-        return False
-
-    try:
-        from pyodide.http import pyfetch
-    except Exception:
-        return False
-
-    original_to_email = to_email
-    to_email = TEST_RECIPIENT_EMAIL
-
-    email_payload = {
-        "from": from_email,
-        "to": [to_email],
-        "subject": "Activa tu cuenta",
-        "html": (
-            f"<p>Hola {user_name},</p>"
-            "<p>Tu cuenta fue creada correctamente.</p>"
-            f"<p>Activa tu contraseña aquí: <a href=\"{activation_link}\">Activar cuenta</a></p>"
-            "<p>Este enlace expira en 1 hora.</p>"
-        ),
-    }
-
-    try:
-        if original_to_email != to_email:
-            print(
-                f"[auth/signup] Redirecting activation email for testing. "
-                f"requested_to={original_to_email} forced_to={to_email}"
-            )
-
-        response = await pyfetch(
-            "https://api.resend.com/emails",
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {resend_api_key}",
-                "Content-Type": "application/json",
-            },
-            body=json.dumps(email_payload),
-        )
-        if response.status in [200, 201, 202]:
-            return True
-
-        try:
-            body_text = await response.text()
-        except Exception:
-            body_text = "<sin cuerpo>"
-
-        print(
-            f"[auth/signup] Resend rejected email. status={response.status} "
             f"from={from_email} to={to_email} body={body_text}"
         )
         return False
