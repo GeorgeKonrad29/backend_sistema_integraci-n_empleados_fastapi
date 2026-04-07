@@ -1,6 +1,4 @@
 """Endpoint para consultar cargos/jerarquía."""
-import traceback
-
 from fastapi import APIRouter, HTTPException, Request, Security
 
 try:
@@ -14,59 +12,35 @@ except ImportError:
 router = APIRouter()
 
 
-def _pick(row, key: str):
+def _clean_row_dict(row_dict: dict) -> dict:
+    clean_dict = {}
+    for key, value in row_dict.items():
+        if str(value) == "jsnull" or value is None:
+            clean_dict[key] = None
+        else:
+            clean_dict[key] = value
+    return clean_dict
+
+
+def _row_to_cargo_response(row) -> dict:
     if hasattr(row, "to_py"):
-        try:
-            row = row.to_py()
-        except Exception:
-            pass
-
-    if isinstance(row, dict):
-        return row.get(key)
-    value = getattr(row, key, None)
-    if value is not None:
-        return value
-    try:
-        return row[key]
-    except Exception:
-        return None
-
-
-def _extract_rows(result):
-    if hasattr(result, "to_py"):
-        try:
-            result = result.to_py()
-        except Exception:
-            pass
-
-    if isinstance(result, dict):
-        rows_raw = result.get("results", [])
+        row_dict = row.to_py()
     else:
-        rows_raw = getattr(result, "results", result)
+        row_dict = {
+            "id": getattr(row, "id", None),
+            "nombre_cargo": getattr(row, "nombre_cargo", None),
+            "area": getattr(row, "area", None),
+            "id_jefe_inmediato": getattr(row, "id_jefe_inmediato", None),
+        }
 
-    if rows_raw is None:
-        return []
-    if hasattr(rows_raw, "to_py"):
-        try:
-            rows_raw = rows_raw.to_py()
-        except Exception:
-            pass
-    if isinstance(rows_raw, list):
-        return rows_raw
-    try:
-        return list(rows_raw)
-    except Exception:
-        print(f"[auth/cargos] Unexpected rows type: {type(rows_raw).__name__}")
-        return []
-
-
-def _serialize_cargo_row(cargo_row):
-    return {
-        "id": _pick(cargo_row, "id"),
-        "nombre_cargo": _pick(cargo_row, "nombre_cargo"),
-        "area": _pick(cargo_row, "area"),
-        "id_jefe_inmediato": _pick(cargo_row, "id_jefe_inmediato"),
-    }
+    return _clean_row_dict(
+        {
+            "id": row_dict.get("id"),
+            "nombre_cargo": row_dict.get("nombre_cargo"),
+            "area": row_dict.get("area"),
+            "id_jefe_inmediato": row_dict.get("id_jefe_inmediato"),
+        }
+    )
 
 
 @router.get("/cargos", response_model=list[JerarquiaResponse])
@@ -74,38 +48,16 @@ async def get_cargos(
     req: Request,
     token_payload: dict = Security(require_permission("cargos.listar")),
 ):
-    try:
-        env = req.scope["env"]
-        db = getattr(env, "dataBase", None)
-        if db is None:
-            print("[auth/cargos] Missing D1 binding: env.dataBase")
-            raise HTTPException(status_code=500, detail="Binding D1 'dataBase' no configurado")
+    env = req.scope["env"]
+    db = env.dataBase
 
-        cargos = await db.prepare(
+    try:
+        query_result = await db.prepare(
             "SELECT id, nombre_cargo, area, id_jefe_inmediato FROM JERARQUIA ORDER BY id"
         ).all()
-
-        rows = _extract_rows(cargos)
-
-        result_list = []
-        for index, cargo_row in enumerate(rows):
-            try:
-                cargo_dict = _serialize_cargo_row(cargo_row)
-                result_list.append(cargo_dict)
-            except Exception as row_error:
-                print(
-                    f"[auth/cargos] Row parse error at index={index}: "
-                    f"{type(row_error).__name__}: {row_error}"
-                )
-
-        return result_list
+        return [_row_to_cargo_response(row) for row in query_result.results]
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise
-
-        print(f"[auth/cargos] Unhandled error: {type(e).__name__}: {e}")
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error consultando cargos ({type(e).__name__})")
+        raise HTTPException(status_code=500, detail=f"Error consultando cargos: {str(e)}")
 
 
 @router.get("/cargos/{cargo_id}", response_model=JerarquiaResponse)
@@ -114,13 +66,10 @@ async def get_cargo_by_id(
     req: Request,
     token_payload: dict = Security(require_permission("cargos.listar")),
 ):
-    try:
-        env = req.scope["env"]
-        db = getattr(env, "dataBase", None)
-        if db is None:
-            print("[auth/cargos/{id}] Missing D1 binding: env.dataBase")
-            raise HTTPException(status_code=500, detail="Binding D1 'dataBase' no configurado")
+    env = req.scope["env"]
+    db = env.dataBase
 
+    try:
         cargo_row = await db.prepare(
             "SELECT id, nombre_cargo, area, id_jefe_inmediato FROM JERARQUIA WHERE id = ? LIMIT 1"
         ).bind(cargo_id).first()
@@ -128,11 +77,8 @@ async def get_cargo_by_id(
         if not cargo_row:
             raise HTTPException(status_code=404, detail=f"Cargo con id={cargo_id} no encontrado")
 
-        return _serialize_cargo_row(cargo_row)
+        return _row_to_cargo_response(cargo_row)
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
-
-        print(f"[auth/cargos/{{id}}] Unhandled error: {type(e).__name__}: {e}")
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error consultando cargo ({type(e).__name__})")
+        raise HTTPException(status_code=500, detail=f"Error consultando cargo: {str(e)}")
