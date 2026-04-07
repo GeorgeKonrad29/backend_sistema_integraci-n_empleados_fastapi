@@ -259,6 +259,53 @@
         ]
       }
     },
+    "/v1/auth/cargos/{cargo_id}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get Cargo By Id",
+        "operationId": "get_cargo_by_id_v1_auth_cargos__cargo_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cargo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Cargo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JerarquiaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/puesto-trabajo/asignar": {
       "post": {
         "tags": [
@@ -712,6 +759,145 @@
         }
       }
     },
+    "/v1/onboarding/solicitudes/{solicitud_id}/estado/siguiente": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Advance Onboarding Request State",
+        "operationId": "advance_onboarding_request_state_v1_onboarding_solicitudes__solicitud_id__estado_siguiente_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "solicitud_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Solicitud Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/usuarios/{usuario_id}/estado-onboarding/siguiente": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Advance User Onboarding State",
+        "operationId": "advance_user_onboarding_state_v1_onboarding_usuarios__usuario_id__estado_onboarding_siguiente_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/solicitudes/{solicitud_id}/rechazar": {
+      "post": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Reject Onboarding Request",
+        "operationId": "reject_onboarding_request_v1_onboarding_solicitudes__solicitud_id__rechazar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "solicitud_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Solicitud Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/onboarding/solicitudes/{solicitud_id}/historial": {
       "get": {
         "tags": [
@@ -995,7 +1181,8 @@
         "enum": [
           "Pendiente",
           "En proceso",
-          "Finalizado"
+          "Finalizado",
+          "Rechazado"
         ],
         "title": "EstadoSolicitud"
       },

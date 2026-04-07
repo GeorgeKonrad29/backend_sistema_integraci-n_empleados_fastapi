@@ -251,36 +251,36 @@ def test_team_onboarding_requests_returns_direct_reports(client, rrhh_token):
     assert response.status_code == 200
     payload = response.json()
     assert isinstance(payload, list)
-    assert payload[0]["id"] == 555
-    assert payload[0]["id_empleado"] == 50
+    assert payload[0]["id"] == 558
+    assert payload[0]["id_empleado"] == 53
 
 
 def test_team_onboarding_requests_filters_by_estado(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?estado=Pendiente",
+        "/v1/onboarding/solicitudes-equipo?estado=Finalizado",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 1
-    assert payload[0]["id"] == 555
-    assert payload[0]["estado"] == "Pendiente"
+    assert payload[0]["id"] == 558
+    assert payload[0]["estado"] == "Finalizado"
 
 
 def test_team_onboarding_requests_filters_by_date_range(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-02T00:00:00&fecha_hasta=2026-04-02T23:59:59",
+        "/v1/onboarding/solicitudes-equipo?fecha_desde=2026-04-04T00:00:00&fecha_hasta=2026-04-04T23:59:59",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 1
-    assert payload[0]["id"] == 555
+    assert payload[0]["id"] == 558
 
 
 def test_team_onboarding_requests_invalid_estado_returns_400(client, rrhh_token):
     response = client.get(
-        "/v1/onboarding/solicitudes-equipo?estado=Finalizado",
+        "/v1/onboarding/solicitudes-equipo?estado=Pendiente",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
     assert response.status_code == 400
@@ -314,8 +314,8 @@ def test_assigned_onboarding_requests_returns_for_resolver(client, token_factory
     assert response.status_code == 200
     payload = response.json()
     assert isinstance(payload, list)
-    assert payload[0]["id"] == 556
-    assert payload[0]["destinatario"] == "Jefe de Infraestructura y Mantenimiento"
+    assert payload[0]["id"] == 557
+    assert payload[0]["destinatario"] == "Mantenimiento"
 
 
 def test_assigned_onboarding_requests_filters_by_estado(client, token_factory):

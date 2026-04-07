@@ -44,10 +44,11 @@ async def list_team_onboarding_requests(
     if cargo_jefe is None:
         raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
 
-    if estado is not None and estado != "Pendiente":
+    valid_states = {"En proceso", "Finalizado", "Rechazado"}
+    if estado is not None and estado not in valid_states:
         raise HTTPException(
             status_code=400,
-            detail="El jefe inmediato solo puede consultar solicitudes en estado Pendiente",
+            detail=f"Estado inválido. Use uno de: {sorted(valid_states)}",
         )
 
     def _validate_iso_datetime(value: str | None, field_name: str) -> str | None:
@@ -67,8 +68,12 @@ async def list_team_onboarding_requests(
     if fecha_desde_iso and fecha_hasta_iso and fecha_desde_iso > fecha_hasta_iso:
         raise HTTPException(status_code=400, detail="fecha_desde no puede ser mayor que fecha_hasta")
 
-    where_clauses = ["j.id_jefe_inmediato = ?", "s.estado = ?"]
+    where_clauses = ["j.id_jefe_inmediato = ?", "s.estado != ?"]
     bindings: list[str | int] = [cargo_jefe, "Pendiente"]
+
+    if estado is not None:
+        where_clauses.append("s.estado = ?")
+        bindings.append(estado)
 
     if fecha_desde_iso is not None:
         where_clauses.append("s.fecha_creacion >= ?")
@@ -126,7 +131,7 @@ async def list_assigned_onboarding_requests(
     if not nombre_cargo and not area:
         return []
 
-    valid_states = {"Pendiente", "En proceso", "Finalizado", "Rechazado"}
+    valid_states = {"En proceso", "Finalizado", "Rechazado"}
     if estado is not None and estado not in valid_states:
         raise HTTPException(
             status_code=400,
@@ -151,9 +156,10 @@ async def list_assigned_onboarding_requests(
         raise HTTPException(status_code=400, detail="fecha_desde no puede ser mayor que fecha_hasta")
 
     where_clauses = [
-        "(LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)) OR LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)))"
+        "(LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)) OR LOWER(TRIM(s.destinatario)) = LOWER(TRIM(?)))",
+        "s.estado != ?",
     ]
-    bindings: list[str] = [nombre_cargo, area]
+    bindings: list[str] = [nombre_cargo, area, "Pendiente"]
 
     if estado is not None:
         where_clauses.append("s.estado = ?")

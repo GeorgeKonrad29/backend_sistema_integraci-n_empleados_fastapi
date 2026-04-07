@@ -346,6 +346,11 @@ class FakePreparedQuery:
             filtered = rows
 
             arg_index = 1
+            if "s.estado != ?" in self.query:
+                estado_excluido = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.estado != estado_excluido]
+                arg_index += 1
+
             if "s.estado = ?" in self.query:
                 estado = self.args[arg_index] if len(self.args) > arg_index else None
                 filtered = [r for r in filtered if r.estado == estado]
@@ -393,6 +398,11 @@ class FakePreparedQuery:
             ]
 
             arg_index = 2
+            if "s.estado != ?" in self.query:
+                estado_excluido = self.args[arg_index] if len(self.args) > arg_index else None
+                filtered = [r for r in filtered if r.estado != estado_excluido]
+                arg_index += 1
+
             if "s.estado = ?" in self.query:
                 estado = self.args[arg_index] if len(self.args) > arg_index else None
                 filtered = [r for r in filtered if r.estado == estado]
