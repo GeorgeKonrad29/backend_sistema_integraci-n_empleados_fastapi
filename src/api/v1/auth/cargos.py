@@ -17,7 +17,13 @@ router = APIRouter()
 def _pick(row, key: str):
     if isinstance(row, dict):
         return row.get(key)
-    return getattr(row, key, None)
+    value = getattr(row, key, None)
+    if value is not None:
+        return value
+    try:
+        return row[key]
+    except Exception:
+        return None
 
 
 @router.get("/cargos", response_model=list[JerarquiaResponse])
@@ -36,10 +42,17 @@ async def get_cargos(
             "SELECT id, nombre_cargo, area, id_jefe_inmediato FROM JERARQUIA ORDER BY id"
         ).all()
 
-        rows = cargos.get("results", []) if isinstance(cargos, dict) else getattr(cargos, "results", [])
-        if not isinstance(rows, list):
-            print(f"[auth/cargos] Unexpected rows type: {type(rows).__name__}")
+        rows_raw = cargos.get("results", []) if isinstance(cargos, dict) else getattr(cargos, "results", [])
+        if rows_raw is None:
             rows = []
+        elif isinstance(rows_raw, list):
+            rows = rows_raw
+        else:
+            try:
+                rows = list(rows_raw)
+            except Exception:
+                print(f"[auth/cargos] Unexpected rows type: {type(rows_raw).__name__}")
+                rows = []
 
         result_list = []
         for index, cargo_row in enumerate(rows):
