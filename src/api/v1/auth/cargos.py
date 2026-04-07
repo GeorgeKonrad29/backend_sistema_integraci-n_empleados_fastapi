@@ -15,6 +15,12 @@ router = APIRouter()
 
 
 def _pick(row, key: str):
+    if hasattr(row, "to_py"):
+        try:
+            row = row.to_py()
+        except Exception:
+            pass
+
     if isinstance(row, dict):
         return row.get(key)
     value = getattr(row, key, None)
@@ -24,6 +30,34 @@ def _pick(row, key: str):
         return row[key]
     except Exception:
         return None
+
+
+def _extract_rows(result):
+    if hasattr(result, "to_py"):
+        try:
+            result = result.to_py()
+        except Exception:
+            pass
+
+    if isinstance(result, dict):
+        rows_raw = result.get("results", [])
+    else:
+        rows_raw = getattr(result, "results", result)
+
+    if rows_raw is None:
+        return []
+    if hasattr(rows_raw, "to_py"):
+        try:
+            rows_raw = rows_raw.to_py()
+        except Exception:
+            pass
+    if isinstance(rows_raw, list):
+        return rows_raw
+    try:
+        return list(rows_raw)
+    except Exception:
+        print(f"[auth/cargos] Unexpected rows type: {type(rows_raw).__name__}")
+        return []
 
 
 def _serialize_cargo_row(cargo_row):
@@ -51,17 +85,7 @@ async def get_cargos(
             "SELECT id, nombre_cargo, area, id_jefe_inmediato FROM JERARQUIA ORDER BY id"
         ).all()
 
-        rows_raw = cargos.get("results", []) if isinstance(cargos, dict) else getattr(cargos, "results", [])
-        if rows_raw is None:
-            rows = []
-        elif isinstance(rows_raw, list):
-            rows = rows_raw
-        else:
-            try:
-                rows = list(rows_raw)
-            except Exception:
-                print(f"[auth/cargos] Unexpected rows type: {type(rows_raw).__name__}")
-                rows = []
+        rows = _extract_rows(cargos)
 
         result_list = []
         for index, cargo_row in enumerate(rows):
