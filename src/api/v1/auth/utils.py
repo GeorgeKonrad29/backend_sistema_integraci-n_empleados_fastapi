@@ -13,6 +13,14 @@ ACCESS_TOKEN_TTL_SECONDS = 3600
 RESEND_FROM_EMAIL = "onboarding@resend.dev"
 
 
+def _resolve_resend_from_email(req: Request) -> str:
+    env = req.scope["env"]
+    configured = getattr(env, "RESEND_FROM_EMAIL", None)
+    if isinstance(configured, str) and configured.strip():
+        return configured.strip()
+    return RESEND_FROM_EMAIL
+
+
 async def get_jwt_secret(req: Request) -> str:
     """Obtiene el JWT secret del entorno."""
     env = req.scope["env"]
@@ -70,7 +78,8 @@ async def send_activation_email(
     except Exception:
         return False
 
-    if not resend_api_key or not RESEND_FROM_EMAIL:
+    from_email = _resolve_resend_from_email(req)
+    if not resend_api_key or not from_email:
         return False
 
     try:
@@ -79,7 +88,7 @@ async def send_activation_email(
         return False
 
     email_payload = {
-        "from": RESEND_FROM_EMAIL,
+        "from": from_email,
         "to": [to_email],
         "subject": "Activa tu cuenta",
         "html": (
@@ -100,6 +109,18 @@ async def send_activation_email(
             },
             body=json.dumps(email_payload),
         )
-        return response.status in [200, 201, 202]
+        if response.status in [200, 201, 202]:
+            return True
+
+        try:
+            body_text = await response.text()
+        except Exception:
+            body_text = "<sin cuerpo>"
+
+        print(
+            f"[auth/signup] Resend rejected email. status={response.status} "
+            f"from={from_email} to={to_email} body={body_text}"
+        )
+        return False
     except Exception:
         return False
