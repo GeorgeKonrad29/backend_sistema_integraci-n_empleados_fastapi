@@ -548,12 +548,31 @@ def test_advance_user_onboarding_state_moves_to_next_state(client, rrhh_token):
     assert payload["estado_actual"] == "En proceso"
 
 
-def test_advance_user_onboarding_state_in_final_returns_400(client, rrhh_token):
+def test_advance_user_onboarding_state_allows_user_to_finalize_own_process(client, token_factory):
+    user_token = token_factory(
+        47,
+        sub="47",
+        correo="soporte1@sinergia.com",
+        rol="Operador",
+        nombre="Técnico Soporte",
+    )
+    response = client.post(
+        "/v1/onboarding/usuarios/47/estado-onboarding/siguiente",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["id"] == 47
+    assert payload["estado_anterior"] == "En proceso"
+    assert payload["estado_actual"] == "Finalizado"
+
+
+def test_advance_user_onboarding_state_forbidden_for_other_user(client, rrhh_token):
     response = client.post(
         "/v1/onboarding/usuarios/49/estado-onboarding/siguiente",
         headers={"Authorization": f"Bearer {rrhh_token}"},
     )
-    assert response.status_code == 400
+    assert response.status_code == 403
 
 
 def test_reject_onboarding_request_by_assigned_resolver(client, token_factory):

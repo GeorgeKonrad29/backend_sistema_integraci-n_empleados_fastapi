@@ -8,7 +8,6 @@ try:
         can_update_onboarding_request,
         get_current_token_payload,
         get_payload_cargo,
-        require_permission,
     )
 except ImportError:
     from ....models.onboarding import OnboardingResponse, OnboardingUpdateRequest
@@ -16,7 +15,6 @@ except ImportError:
         can_update_onboarding_request,
         get_current_token_payload,
         get_payload_cargo,
-        require_permission,
     )
 
 router = APIRouter()
@@ -203,10 +201,22 @@ async def advance_onboarding_request_state(
 async def advance_user_onboarding_state(
     usuario_id: int,
     req: Request,
-    token_payload: dict = Security(require_permission("onboarding.listar")),
+    token_payload: dict = Security(get_current_token_payload),
 ):
     env = req.scope["env"]
     db = env.dataBase
+
+    requester_id = token_payload.get("sub")
+    try:
+        requester_id = int(requester_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="El token no contiene un id de usuario válido")
+
+    if requester_id != usuario_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el usuario titular puede actualizar su estado de onboarding",
+        )
 
     try:
         current = await db.prepare(
@@ -219,7 +229,14 @@ async def advance_user_onboarding_state(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     estado_actual = str(getattr(current, "estado_onboarding", None) or "")
-    estado_siguiente = _next_state(estado_actual)
+    if estado_actual == "Pendiente":
+        estado_siguiente = "En proceso"
+    elif estado_actual == "En proceso":
+        estado_siguiente = "Finalizado"
+    elif estado_actual == "Finalizado":
+        raise HTTPException(status_code=400, detail="El estado ya está en su valor final")
+    else:
+        raise HTTPException(status_code=400, detail=f"Estado actual inválido: {estado_actual}")
 
     try:
         updated = await db.prepare(

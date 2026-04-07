@@ -166,9 +166,9 @@ async def signup(
 
     try:
         created_user = await db.prepare(
-            "INSERT INTO USUARIO (correo, contrasena, nombre, rol, cargo) VALUES (?, ?, ?, ?, ?) RETURNING id, cargo"
+            "INSERT INTO USUARIO (correo, contrasena, nombre, rol, cargo, estado_onboarding) VALUES (?, ?, ?, ?, ?, ?) RETURNING id, cargo"
         ).bind(
-            payload.correo, placeholder_password, payload.nombre, role_to_insert, payload.cargo
+            payload.correo, placeholder_password, payload.nombre, role_to_insert, payload.cargo, "En proceso"
         ).first()
     except Exception as e:
         raise HTTPException(

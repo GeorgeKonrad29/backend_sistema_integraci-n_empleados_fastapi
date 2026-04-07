@@ -167,6 +167,8 @@ class FakePreparedQuery:
             user_id = self.args[0] if self.args else None
             if user_id == 48:
                 return FakeRow(id=48, estado_onboarding="Pendiente")
+            if user_id == 47:
+                return FakeRow(id=47, estado_onboarding="En proceso")
             if user_id == 49:
                 return FakeRow(id=49, estado_onboarding="Finalizado")
             return None
