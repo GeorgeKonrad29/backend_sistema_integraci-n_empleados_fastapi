@@ -20,6 +20,7 @@ ROLE_CARGO_ACCESS: dict[str, list[int]] = {
 # Agrega o ajusta permisos según crezca el sistema.
 PERMISSION_ROLES: dict[str, list[str]] = {
     "usuarios.crear": ["rrhh"],
+    "usuarios.eliminar": ["rrhh"],
     "auth.signup": ["rrhh"],
     "onboarding.crear": ["rrhh"],
     "onboarding.listar": ["rrhh"],
@@ -94,6 +95,14 @@ async def can_update_onboarding_request(db, user_cargo_id: int, destinatario: st
     if is_rrhh_cargo(user_cargo_id):
         return True
     return await destination_matches_user_cargo(db, user_cargo_id, destinatario)
+
+
+async def can_delete_onboarding_request(db, user_cargo_id: int, employee_cargo_id: int | None) -> bool:
+    if is_rrhh_cargo(user_cargo_id):
+        return True
+    if employee_cargo_id is None:
+        return False
+    return await is_direct_boss_of_cargo(db, user_cargo_id, int(employee_cargo_id))
 
 
 async def can_view_onboarding_history(

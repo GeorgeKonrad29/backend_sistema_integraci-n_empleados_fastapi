@@ -17,12 +17,18 @@ from .update import (
     router as update_router,
     update_onboarding_request,
 )
+from .delete import (
+    delete_onboarding_request,
+    delete_my_onboarding_requests,
+    router as delete_router,
+)
 
 router = APIRouter()
 router.include_router(dotacion_router)
 router.include_router(create_router)
 router.include_router(list_router)
 router.include_router(update_router)
+router.include_router(delete_router)
 router.include_router(history_router)
 
 __all__ = [
@@ -37,5 +43,7 @@ __all__ = [
     "advance_onboarding_request_state",
     "advance_user_onboarding_state",
     "reject_onboarding_request",
+    "delete_onboarding_request",
+    "delete_my_onboarding_requests",
     "get_onboarding_request_history",
 ]

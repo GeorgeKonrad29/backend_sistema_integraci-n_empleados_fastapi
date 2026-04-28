@@ -3,6 +3,7 @@ from .jwt import create_access_token, decode_access_token
 from .security import (
 	bearer_scheme,
 	can_create_onboarding_for_employee,
+	can_delete_onboarding_request,
 	can_manage_dotacion,
 	can_update_onboarding_request,
 	can_view_onboarding_history,
@@ -34,6 +35,7 @@ __all__ = [
 	"is_direct_boss_of_cargo",
 	"destination_matches_user_cargo",
 	"can_create_onboarding_for_employee",
+	"can_delete_onboarding_request",
 	"can_manage_dotacion",
 	"can_update_onboarding_request",
 	"can_view_onboarding_history",

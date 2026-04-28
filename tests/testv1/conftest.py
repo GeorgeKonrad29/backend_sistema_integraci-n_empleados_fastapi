@@ -17,15 +17,26 @@ class FakeRow:
 
 
 class FakePreparedQuery:
-    def __init__(self, query: str):
+    def __init__(self, query: str, db=None):
         self.query = " ".join(query.lower().split())
         self.args = ()
+        self.db = db
 
     def bind(self, *args):
         self.args = args
         return self
 
     async def first(self):
+        if "select id, nombre, correo, estado_onboarding from usuario where id = ? limit 1" in self.query:
+            user_id = self.args[0] if self.args else None
+            if user_id == 48:
+                return FakeRow(id=48, nombre="Gerente RRHH", correo="rrhh@sinergia.com", estado_onboarding="Pendiente")
+            if user_id == 99:
+                return FakeRow(id=99, nombre="Usuario Eliminable", correo="eliminar@sinergia.com", estado_onboarding="Pendiente")
+            if user_id == 49:
+                return FakeRow(id=49, nombre="Usuario Finalizado", correo="finalizado@sinergia.com", estado_onboarding="Finalizado")
+            return None
+
         if "select id, nombre_cargo, area, id_jefe_inmediato from jerarquia where id = ? limit 1" in self.query:
             cargo_id = self.args[0] if self.args else None
             if cargo_id == 1:
@@ -190,22 +201,27 @@ class FakePreparedQuery:
                     id=556,
                     id_empleado=51,
                     fecha_creacion="2026-04-03T00:00:00",
-                    fecha_fin="2026-04-20T00:00:00",
                     estado="Pendiente",
-                    especificaciones="Asignar hardware y credenciales de acceso",
-                    destinatario="Jefe de Infraestructura y Mantenimiento",
-                    cargo_empleado=8,
+                    cargo=8,
+                    nombre_empleado="Empleado Test",
+                )
+            if solicitud_id == 559:
+                return FakeRow(
+                    id=559,
+                    id_empleado=51,
+                    fecha_creacion="2026-04-05T00:00:00",
+                    estado="En proceso",
+                    cargo=8,
+                    nombre_empleado="Empleado Test",
                 )
             if solicitud_id == 321:
                 return FakeRow(
                     id=321,
                     id_empleado=48,
                     fecha_creacion="2026-04-01T00:00:00",
-                    fecha_fin="2026-04-15T00:00:00",
                     estado="Pendiente",
-                    especificaciones="Inducción corporativa",
-                    destinatario="Recursos Humanos",
-                    cargo_empleado=48,
+                    cargo=48,
+                    nombre_empleado="Gerente RRHH",
                 )
             return None
 
@@ -521,12 +537,32 @@ class FakePreparedQuery:
         return FakeRow(results=[])
 
     async def run(self):
+        if "delete from activacion_usuario where user_id = ?" in self.query:
+            if self.db is not None and self.args:
+                self.db.deleted_activation_user_ids.add(self.args[0])
+            return FakeRow(success=True)
+
+        if "delete from usuario where id = ?" in self.query:
+            user_id = self.args[0] if self.args else None
+            if user_id == 99 and self.db is not None and user_id not in self.db.deleted_activation_user_ids:
+                raise Exception("ACTIVACION_USUARIO must be deleted before deleting USUARIO")
+            return FakeRow(success=True)
+
+        if "delete from historial where id_solicitud = ?" in self.query:
+            return FakeRow(success=True)
+
+        if "delete from solicitudes where id = ?" in self.query:
+            return FakeRow(success=True)
+
         return FakeRow(success=True)
 
 
 class FakeDatabase:
+    def __init__(self):
+        self.deleted_activation_user_ids = set()
+
     def prepare(self, query):
-        return FakePreparedQuery(query)
+        return FakePreparedQuery(query, self)
 
 
 class FakeEnv:

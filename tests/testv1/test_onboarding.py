@@ -692,3 +692,58 @@ def test_onboarding_history_not_found_returns_404(client, rrhh_token):
 def test_onboarding_history_without_token_returns_401(client):
     response = client.get("/v1/onboarding/solicitudes/321/historial")
     assert response.status_code == 401
+
+def test_delete_onboarding_request_by_direct_boss_pending_returns_200(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.delete(
+        "/v1/onboarding/solicitudes/556",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["deleted_request"]["id"] == 556
+
+
+def test_delete_onboarding_request_in_progress_returns_409(client, token_factory):
+    jefe_token = token_factory(
+        7,
+        sub="7",
+        correo="infraestructura@sinergia.com",
+        rol="Encargado de Area",
+        nombre="Jefe Infraestructura",
+    )
+    response = client.delete(
+        "/v1/onboarding/solicitudes/559",
+        headers={"Authorization": f"Bearer {jefe_token}"},
+    )
+    assert response.status_code == 409
+
+
+def test_delete_onboarding_request_by_rrhh_succeeds(client, rrhh_token):
+    response = client.delete(
+        "/v1/onboarding/solicitudes/556",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+
+
+def test_delete_onboarding_request_without_token_returns_401(client):
+    response = client.delete("/v1/onboarding/solicitudes/556")
+    assert response.status_code == 401
+
+
+def test_delete_onboarding_request_not_found_returns_404(client, rrhh_token):
+    response = client.delete(
+        "/v1/onboarding/solicitudes/999",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 404

@@ -181,3 +181,43 @@ def test_auth_cargos_without_token_returns_401(client):
 def test_auth_logout_without_token_returns_401(client):
     response = client.post("/v1/auth/logout")
     assert response.status_code == 401
+
+
+def test_auth_delete_user_returns_ok(client, rrhh_token):
+    response = client.delete(
+        "/v1/auth/usuarios/99",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["deleted_user"]["id"] == 99
+
+
+def test_auth_delete_user_not_found_returns_404(client, rrhh_token):
+    response = client.delete(
+        "/v1/auth/usuarios/999",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 404
+
+
+def test_auth_delete_user_self_delete_returns_400(client, rrhh_token):
+    response = client.delete(
+        "/v1/auth/usuarios/48",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 400
+
+
+def test_auth_delete_user_with_completed_onboarding_returns_409(client, rrhh_token):
+    response = client.delete(
+        "/v1/auth/usuarios/49",
+        headers={"Authorization": f"Bearer {rrhh_token}"},
+    )
+    assert response.status_code == 409
+
+
+def test_auth_delete_user_without_token_returns_401(client):
+    response = client.delete("/v1/auth/usuarios/99")
+    assert response.status_code == 401
