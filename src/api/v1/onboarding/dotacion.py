@@ -3,12 +3,53 @@ from fastapi import APIRouter, HTTPException, Request, Security
 try:
     from models.onboarding import DotacionTemplateRequest, DotacionTemplateResponse
     from utils import can_manage_dotacion, get_current_token_payload, get_payload_cargo
+    from utils import require_permission
 except ImportError:
     from ....models.onboarding import DotacionTemplateRequest, DotacionTemplateResponse
     from ....utils import can_manage_dotacion, get_current_token_payload, get_payload_cargo
+    from ....utils import require_permission
 
 router = APIRouter()
 
+
+def _row_to_dotacion_response(row) -> dict:
+    if hasattr(row, "to_py"):
+        row_dict = row.to_py()
+    else:
+        row_dict = {
+            "id": getattr(row, "id", None),
+            "encargado": getattr(row, "encargado", None),
+            "tipo": getattr(row, "tipo", None),
+            "especificacion": getattr(row, "especificacion", None),
+        }
+
+    return {
+        "id": row_dict.get("id"),
+        "encargado": row_dict.get("encargado"),
+        "tipo": row_dict.get("tipo"),
+        "especificacion": row_dict.get("especificacion"),
+    }
+
+
+@router.get("/dotacion", response_model=list[DotacionTemplateResponse])
+async def list_dotacion_templates(
+    req: Request,
+    token_payload: dict = Security(require_permission("onboarding.dotacion.listar")),
+):
+    """
+    Obtiene todos los registros de DOTACION.
+    """
+    env = req.scope["env"]
+    db = env.dataBase
+
+    try:
+        result = await db.prepare(
+            "SELECT id, encargado, tipo, especificacion FROM DOTACION ORDER BY id DESC"
+        ).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error consultando DOTACION: {str(e)}")
+
+    return [DotacionTemplateResponse.model_validate(_row_to_dotacion_response(row)) for row in result.results]
 
 @router.post("/dotacion", response_model=DotacionTemplateResponse)
 async def create_dotacion_template(
