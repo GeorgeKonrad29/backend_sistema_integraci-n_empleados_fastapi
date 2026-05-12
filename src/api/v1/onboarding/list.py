@@ -6,9 +6,11 @@ from .common import _rows_to_onboarding_response_list
 
 try:
     from models.onboarding import OnboardingResponse
+    from models.auth import TeamEmployee
     from utils import get_current_token_payload, require_permission
 except ImportError:
     from ....models.onboarding import OnboardingResponse
+    from ....models.auth import TeamEmployee
     from ....utils import get_current_token_payload, require_permission
 
 router = APIRouter()
@@ -172,6 +174,62 @@ async def list_team_onboarding_requests(
         raise HTTPException(status_code=500, detail=f"Error al obtener solicitudes del equipo: {str(e)}")
 
     return _rows_to_onboarding_response_list(query_result.results)
+
+
+@router.get("/mi-equipo/empleados-no-finalizados", response_model=list[TeamEmployee])
+async def list_my_team_employees_pending_onboarding(
+    req: Request,
+    token_payload: dict = Security(get_current_token_payload),
+    estado: str | None = Query(default=None),
+):
+    env = req.scope["env"]
+    db = env.dataBase
+
+    cargo_jefe = token_payload.get("cargo")
+    if cargo_jefe is None:
+        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+
+    valid_states = {"Pendiente", "En proceso", "Finalizado", "Rechazado"}
+    if estado is not None and estado not in valid_states:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Use uno de: {sorted(valid_states)}")
+
+    try:
+        if estado is None:
+            query = '''
+            SELECT u.id, u.nombre, u.correo, u.cargo, u.estado_onboarding, j.nombre_cargo, j.area
+            FROM USUARIO u
+            JOIN JERARQUIA j ON j.id = u.cargo
+            WHERE j.id_jefe_inmediato = ? AND (u.estado_onboarding IS NULL OR u.estado_onboarding != 'Finalizado')
+            ORDER BY u.nombre
+            '''
+            query_result = await db.prepare(query).bind(int(cargo_jefe)).all()
+        else:
+            query = '''
+            SELECT u.id, u.nombre, u.correo, u.cargo, u.estado_onboarding, j.nombre_cargo, j.area
+            FROM USUARIO u
+            JOIN JERARQUIA j ON j.id = u.cargo
+            WHERE j.id_jefe_inmediato = ? AND u.estado_onboarding = ?
+            ORDER BY u.nombre
+            '''
+            query_result = await db.prepare(query).bind(int(cargo_jefe), estado).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo empleados del equipo: {str(e)}")
+
+    employees: list[dict] = []
+    for row in query_result.results:
+        employees.append(
+            {
+                "id": getattr(row, "id", None),
+                "nombre": getattr(row, "nombre", None),
+                "correo": getattr(row, "correo", None),
+                "cargo": getattr(row, "cargo", None),
+                "estado_onboarding": getattr(row, "estado_onboarding", None),
+                "nombre_cargo": getattr(row, "nombre_cargo", None),
+                "area": getattr(row, "area", None),
+            }
+        )
+
+    return employees
 
 
 @router.get("/solicitudes-asignadas", response_model=list[OnboardingResponse])

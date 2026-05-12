@@ -53,3 +53,14 @@ class ActivatePasswordResponse(BaseModel):
     """Modelo de respuesta de activación"""
     status: str
     message: str
+
+
+class TeamEmployee(BaseModel):
+    """Resumen de empleado para vistas de equipo/jefes"""
+    id: int
+    nombre: str
+    correo: str
+    cargo: int | None = None
+    estado_onboarding: str | None = None
+    nombre_cargo: str | None = None
+    area: str | None = None

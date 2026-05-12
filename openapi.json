@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Sistema de Integración de Empleados",
-    "description": "API para gestión de empleados, solicitudes y jerarquía",
+    "title": "Sistema de Integraci\u00f3n de Empleados",
+    "description": "API para gesti\u00f3n de empleados, solicitudes y jerarqu\u00eda",
     "version": "1.0.0"
   },
   "paths": {
@@ -54,7 +54,7 @@
           "Auth"
         ],
         "summary": "Get Current User",
-        "description": "Obtiene la información del usuario actual basado en el token JWT.",
+        "description": "Obtiene la informaci\u00f3n del usuario actual basado en el token JWT.",
         "operationId": "get_current_user_v1_auth_me_get",
         "responses": {
           "200": {
@@ -79,7 +79,7 @@
           "Auth"
         ],
         "summary": "Logout",
-        "description": "Cierre de sesión lógico para cliente frontend.\nEn JWT stateless el cliente debe descartar el token.",
+        "description": "Cierre de sesi\u00f3n l\u00f3gico para cliente frontend.\nEn JWT stateless el cliente debe descartar el token.",
         "operationId": "logout_v1_auth_logout_post",
         "responses": {
           "200": {
@@ -104,7 +104,7 @@
           "Auth"
         ],
         "summary": "Signup",
-        "description": "Endpoint de registro. Crea usuario pendiente y genera enlace de activación.",
+        "description": "Endpoint de registro. Crea usuario pendiente y genera enlace de activaci\u00f3n.",
         "operationId": "signup_v1_auth_signup_post",
         "requestBody": {
           "content": {
@@ -151,7 +151,7 @@
           "Auth"
         ],
         "summary": "Activate Password Form",
-        "description": "Muestra formulario HTML para activar contraseña.",
+        "description": "Muestra formulario HTML para activar contrase\u00f1a.",
         "operationId": "activate_password_form_v1_auth_activate_password_get",
         "parameters": [
           {
@@ -193,7 +193,7 @@
           "Auth"
         ],
         "summary": "Activate Password",
-        "description": "Define la contraseña final usando el token generado en signup.",
+        "description": "Define la contrase\u00f1a final usando el token generado en signup.",
         "operationId": "activate_password_v1_auth_activate_password_post",
         "requestBody": {
           "required": true,
@@ -306,6 +306,52 @@
         }
       }
     },
+    "/v1/auth/usuarios/{user_id}": {
+      "delete": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Delete User",
+        "description": "Elimina un usuario por su ID.\nAcceso permitido solo para Root o Administrador (usuarios.eliminar).\n\nNotas de integridad:\n- Se eliminar\u00e1n en cascada las solicitudes asociadas (SOLICITUDES)\n- Se eliminar\u00e1n los historiales de las solicitudes (HISTORIAL)\n- Se desasignar\u00e1 el puesto de trabajo si lo tiene (PUESTO_DE_TRABAJO)",
+        "operationId": "delete_user_v1_auth_usuarios__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/puesto-trabajo/asignar": {
       "post": {
         "tags": [
@@ -401,6 +447,35 @@
       }
     },
     "/v1/onboarding/dotacion": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List Dotacion Templates",
+        "description": "Obtiene todos los registros de DOTACION.",
+        "operationId": "list_dotacion_templates_v1_onboarding_dotacion_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DotacionTemplateResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Dotacion Templates V1 Onboarding Dotacion Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Onboarding"
@@ -685,6 +760,64 @@
                     "$ref": "#/components/schemas/OnboardingResponse"
                   },
                   "title": "Response List Team Onboarding Requests V1 Onboarding Solicitudes Equipo Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/mi-equipo/empleados-no-finalizados": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List My Team Employees Pending Onboarding",
+        "operationId": "list_my_team_employees_pending_onboarding_v1_onboarding_mi_equipo_empleados_no_finalizados_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamEmployee"
+                  },
+                  "title": "Response List My Team Employees Pending Onboarding V1 Onboarding Mi Equipo Empleados No Finalizados Get"
                 }
               }
             }
@@ -988,6 +1121,77 @@
         }
       }
     },
+    "/v1/onboarding/solicitudes/{solicitud_id}": {
+      "delete": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Delete Onboarding Request",
+        "description": "Elimina una solicitud de onboarding por su ID.\nAcceso permitido para:\n- RRHH (Administrador o Gerente Talento Humano)\n- El jefe inmediato del empleado que cre\u00f3 la solicitud\n\nEliminar\u00e1 tambi\u00e9n:\n- El historial de cambios asociado a la solicitud",
+        "operationId": "delete_onboarding_request_v1_onboarding_solicitudes__solicitud_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "solicitud_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Solicitud Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/solicitudes": {
+      "delete": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Delete My Onboarding Requests",
+        "description": "Elimina todas las solicitudes pendientes del usuario actual.\nSolo elimina solicitudes cuyo estado es 'Pendiente'.",
+        "operationId": "delete_my_onboarding_requests_v1_onboarding_solicitudes_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/onboarding/solicitudes/{solicitud_id}/historial": {
       "get": {
         "tags": [
@@ -1156,7 +1360,7 @@
           "contrasena"
         ],
         "title": "ActivatePasswordRequest",
-        "description": "Modelo para activar cuenta definiendo contraseña"
+        "description": "Modelo para activar cuenta definiendo contrase\u00f1a"
       },
       "ActivatePasswordResponse": {
         "properties": {
@@ -1175,7 +1379,7 @@
           "message"
         ],
         "title": "ActivatePasswordResponse",
-        "description": "Modelo de respuesta de activación"
+        "description": "Modelo de respuesta de activaci\u00f3n"
       },
       "DotacionTemplateRequest": {
         "properties": {
@@ -1322,7 +1526,7 @@
           "area"
         ],
         "title": "JerarquiaResponse",
-        "description": "Modelo de respuesta para cargos/jerarquía"
+        "description": "Modelo de respuesta para cargos/jerarqu\u00eda"
       },
       "LoginRequest": {
         "properties": {
@@ -1648,7 +1852,7 @@
         },
         "type": "object",
         "title": "OnboardingUpdateRequest",
-        "description": "modelo para actualización parcial de una solicitud de onboarding"
+        "description": "modelo para actualizaci\u00f3n parcial de una solicitud de onboarding"
       },
       "PuestoTrabajoAsignacionRequest": {
         "properties": {
@@ -1830,6 +2034,74 @@
         ],
         "title": "SignupResponse",
         "description": "Modelo de respuesta de registro"
+      },
+      "TeamEmployee": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          },
+          "estado_onboarding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Onboarding"
+          },
+          "nombre_cargo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre Cargo"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "correo"
+        ],
+        "title": "TeamEmployee",
+        "description": "Resumen de empleado para vistas de equipo/jefes"
       },
       "ValidationError": {
         "properties": {
