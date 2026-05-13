@@ -211,8 +211,9 @@ async def get_occupied_workstations(
     return {"ocupadas": occupied, "count": len(occupied)}
 
 
-@router.get("/sugerencia")
+@router.post("/sugerencia")
 async def get_workstation_suggestion(
+    payload: PuestoTrabajoAsignacionRequest,
     req: Request,
     token_payload: dict = Security(get_current_token_payload),
 ):
@@ -223,7 +224,30 @@ async def get_workstation_suggestion(
     env = req.scope["env"]
     db = env.dataBase
 
-    # 1. Obtener todos los puestos ocupados con informacion de empleados
+    # 1. Obtener informacion del empleado a asignar
+    empleado_info = None
+    if payload.id_empleado:
+        try:
+            empleado = (
+                await db.prepare(
+                    "SELECT u.id, u.nombre, j.area FROM USUARIO u INNER JOIN JERARQUIA j ON j.id = u.cargo WHERE u.id = ? LIMIT 1"
+                )
+                .bind(payload.id_empleado)
+                .first()
+            )
+            if empleado:
+                empleado_info = {
+                    "id": empleado.id,
+                    "nombre": empleado.nombre,
+                    "area": empleado.area,
+                }
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error obteniendo informacion del empleado: {e}",
+            )
+
+    # 2. Obtener todos los puestos ocupados con informacion de empleados
     try:
         result = await db.prepare(
             """
@@ -240,7 +264,7 @@ async def get_workstation_suggestion(
             status_code=500, detail=f"Error obteniendo los puestos ocupados: {e}"
         )
 
-    # 2. Procesar los datos de puestos ocupados
+    # 3. Procesar los datos de puestos ocupados
     ocupados = []
     for row in result.results:
         try:
@@ -249,7 +273,7 @@ async def get_workstation_suggestion(
         except Exception:
             continue
 
-    # 3. Contar puestos ocupados por tipo y area
+    # 4. Contar puestos ocupados por tipo y area
     estadisticas = {
         "total_ocupados": len(ocupados),
         "por_tipo": {},
@@ -268,9 +292,19 @@ async def get_workstation_suggestion(
             estadisticas["por_area"][area] = 0
         estadisticas["por_area"][area] += 1
 
-    # 4. Preparar el prompt para la IA
-    prompt = f"""Eres un asistente especializado en optimizacion de distribucion de espacios de trabajo en una oficina.
+    # 5. Preparar el prompt para la IA con informacion del empleado a asignar
+    empleado_context = ""
+    if empleado_info:
+        empleado_context = f"""
+Empleado a asignar:
+- ID: {empleado_info["id"]}
+- Nombre: {empleado_info["nombre"]}
+- Area: {empleado_info["area"]}
+- Tipo de puesto solicitado: {payload.tipo_puesto or "No especificado"}
+"""
 
+    prompt = f"""Eres un asistente especializado en optimizacion de distribucion de espacios de trabajo en una oficina.
+{empleado_context}
 Datos actuales de puestos de trabajo asignados:
 - Total de puestos ocupados: {estadisticas["total_ocupados"]}
 - Distribucion por tipo de puesto: {json.dumps(estadisticas["por_tipo"])}
@@ -279,15 +313,16 @@ Datos actuales de puestos de trabajo asignados:
 Listado completo de puestos ocupados:
 {json.dumps(ocupados, ensure_ascii=False, indent=2)}
 
-Basandote en esta informacion, proporciona una sugerencia sobre donde deberia ir un nuevo empleado a asignar su puesto de trabajo.
+Basandote en esta informacion, proporciona una sugerencia sobre donde deberia ir este empleado a asignar su puesto de trabajo.
 Ten en cuenta:
-1. La distribucion actual de empleados por area
+1. La distribucion actual de empleados en su area
 2. El balance entre diferentes tipos de puestos
 3. La distribucion geografica (piso, fila, columna)
+4. Proximidad a colegas del mismo area
 
-Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado el nuevo puesto (piso, fila, columna aproximados) y por que."""
+Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado el puesto (piso, fila, columna aproximados) y por que."""
 
-    # 5. Llamar a Cloudflare Worker AI
+    # 6. Llamar a Cloudflare Worker AI
     try:
         # En Cloudflare Workers, las variables se acceden como atributos del objeto env
         cf_token = getattr(env, "CF_AI_TOKEN", None)
@@ -327,6 +362,8 @@ Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado e
             "sugerencia": suggestion,
             "estadisticas": estadisticas,
             "puestos_ocupados": ocupados,
+            "empleado": empleado_info,
+            "tipo_puesto_solicitado": payload.tipo_puesto,
         }
     except httpx.RequestError as e:
         raise HTTPException(

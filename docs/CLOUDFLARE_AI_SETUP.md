@@ -2,8 +2,9 @@
 
 ## Descripcion del Endpoint `/sugerencia`
 
-El endpoint `GET /puestos-trabajo/sugerencia` utiliza Cloudflare Worker AI para proporcionar recomendaciones inteligentes sobre donde asignar nuevos puestos de trabajo basandose en:
+El endpoint `POST /puestos-trabajo/sugerencia` utiliza Cloudflare Worker AI para proporcionar recomendaciones inteligentes sobre donde asignar un empleado especifico a un puesto de trabajo, basandose en:
 
+- La informacion del empleado a asignar (nombre, area, tipo de puesto)
 - La distribucion actual de empleados
 - El balance entre diferentes tipos de puestos
 - La distribucion geografica de los puestos (piso, fila, columna)
@@ -81,15 +82,30 @@ cf_account_id = getattr(env, "CF_ACCOUNT_ID", None)
 ### Request
 
 ```bash
-curl -X GET https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
-  -H "Authorization: Bearer tu_token_jwt"
+curl -X POST https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
+  -H "Authorization: Bearer tu_token_jwt" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_empleado": 10,
+    "piso": 1,
+    "fila": 5,
+    "columna": 8,
+    "tipo_puesto": "abierto"
+  }'
 ```
+
+**Parametros del Request:**
+- `id_empleado` (int, requerido): ID del empleado a asignar
+- `piso` (int, 1-2): Piso donde se sugiere el puesto
+- `fila` (int, 1-20): Fila donde se sugiere el puesto
+- `columna` (int, 1-20): Columna donde se sugiere el puesto
+- `tipo_puesto` (string, opcional): Tipo de puesto (ej: "abierto", "privado")
 
 ### Response
 
 ```json
 {
-  "sugerencia": "Basandote en la distribucion actual, recomiendo asignar el nuevo puesto en el Piso 2, Fila 10, Columna 5...",
+  "sugerencia": "Basandote en el area de ingenieria donde trabaja Juan Perez, recomiendo asignar el puesto en el Piso 2, Fila 10, Columna 5 para mayor proximidad a colegas del departamento...",
   "estadisticas": {
     "total_ocupados": 25,
     "por_tipo": {
@@ -102,11 +118,17 @@ curl -X GET https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
       "administracion": 5
     }
   },
+  "empleado": {
+    "id": 10,
+    "nombre": "Juan Perez",
+    "area": "ingenieria"
+  },
+  "tipo_puesto_solicitado": "abierto",
   "puestos_ocupados": [
     {
       "id": 1,
-      "id_empleado": 10,
-      "nombre_empleado": "Juan Perez",
+      "id_empleado": 101,
+      "nombre_empleado": "Carlos Gomez",
       "area": "ingenieria",
       "tipo_puesto": "abierto",
       "coordenadas": "P1-F01-C01",
@@ -127,16 +149,17 @@ curl -X GET https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
 
 ## Flujo de Operacion
 
-1. El usuario hace una solicitud GET a `/puestos-trabajo/sugerencia`
-2. El endpoint consulta la base de datos para obtener todos los puestos ocupados
-3. Se procesan los datos para generar estadisticas por tipo y area
-4. Se construye un prompt descriptivo con esta informacion
-5. Se envia el prompt a Cloudflare Worker AI a traves de la API
-6. La IA analiza los datos y proporciona una recomendacion de ubicacion
-7. La respuesta se retorna al cliente con:
+1. El cliente envia una solicitud POST con los datos del empleado a asignar
+2. El endpoint consulta la BD para obtener info del empleado (nombre, area)
+3. Se obtienen todos los puestos ocupados y sus estadisticas
+4. Se construye un prompt personalizado con la info del empleado
+5. El prompt se envia a Cloudflare Worker AI
+6. La IA analiza los datos y proporciona una recomendacion ubicacion
+7. La respuesta se retorna con:
    - La sugerencia de la IA
-   - Las estadisticas calculadas
-   - El listado completo de puestos ocupados
+   - Las estadisticas de distribucion
+   - La info del empleado
+   - El listado de puestos ocupados
 
 ## Solución de Problemas
 
@@ -146,6 +169,19 @@ Asegúrate de que:
 - Las variables `CF_AI_TOKEN` y `CF_ACCOUNT_ID` están configuradas en `wrangler.jsonc`
 - Ejecutaste `wrangler deploy` después de actualizar las variables
 - El Worker recibió correctamente las variables durante el despliegue
+
+### Error: "El empleado con ID X no existe"
+
+Verifica que:
+- El `id_empleado` que enviaste existe en la tabla USUARIO
+- El empleado tiene asignado un cargo (FK a JERARQUIA)
+
+### Error: "Error obteniendo informacion del empleado"
+
+Verifica que:
+- La tabla USUARIO existe
+- La tabla JERARQUIA existe
+- El join entre USUARIO y JERARQUIA funciona correctamente
 
 ### Error: "Error llamando a Cloudflare AI"
 
@@ -182,4 +218,5 @@ Todas las variables definidas en la seccion `vars` de `wrangler.jsonc` estan dis
 - El endpoint requiere autenticacion (necesita un token JWT valido)
 - La IA proporciona sugerencias basadas en patrones, no garantias de optimalidad
 - Puedes usar estas sugerencias como referencia para tomar decisiones finales
-- Las recomendaciones se basan en la distribucion geográfica y por departamento
+- Las recomendaciones se personalizan segun el area del empleado
+- El endpoint puede personalizar mas la recomendacion si incluyes el tipo de puesto solicitado

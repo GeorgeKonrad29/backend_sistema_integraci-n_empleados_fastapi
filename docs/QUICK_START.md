@@ -36,8 +36,16 @@ wrangler deploy
 ### 4. Probar el Endpoint
 
 ```bash
-curl -X GET https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
-  -H "Authorization: Bearer TU_TOKEN_JWT"
+curl -X POST https://tu-worker.workers.dev/puestos-trabajo/sugerencia \
+  -H "Authorization: Bearer TU_TOKEN_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_empleado": 10,
+    "piso": 1,
+    "fila": 5,
+    "columna": 8,
+    "tipo_puesto": "abierto"
+  }'
 ```
 
 ## Respuesta Esperada

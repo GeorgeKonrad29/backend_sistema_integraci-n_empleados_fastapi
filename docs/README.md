@@ -46,7 +46,20 @@
 - Limitaciones y consideraciones
 - Proximos pasos opcionales
 
-👉 **Lee esto para entender la arquitectura**
+👉 **Lee esto para entender la implementacion**
+
+---
+
+### 🏗️ [ARQUITECTURA.md](ARQUITECTURA.md)
+**Diagrama visual de la arquitectura**
+- Flujo general del proceso
+- Estructura de datos JSON
+- Bases de datos consultadas
+- Componentes del sistema
+- Seguridad y tiempos de respuesta
+- Evolucion futura
+
+👉 **Consulta esto para entender visualmente como funciona**
 
 ---
 
@@ -61,12 +74,13 @@
 | Solucionar problemas | CLOUDFLARE_AI_SETUP.md | Solución de Problemas |
 | Entender arquitectura | IMPLEMENTACION_SUGERENCIA.md | Flujo de Funcionamiento |
 | Ver SQL utilizado | RESUMEN_CAMBIOS.md | Querys SQL Utilizados |
+| Ver diagramas | ARQUITECTURA.md | Flujo General |
 
 ## Puntos Clave
 
 ### Endpoint
 ```
-GET /puestos-trabajo/sugerencia
+POST /puestos-trabajo/sugerencia
 ```
 
 ### Autenticacion
