@@ -9,6 +9,7 @@ dependencies = [
     "fastapi",
     "markupsafe",
     "jinja2",
+    "httpx",
 ]
 
 [dependency-groups]
