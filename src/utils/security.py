@@ -26,6 +26,7 @@ PERMISSION_ROLES: dict[str, list[str]] = {
     "onboarding.listar": ["rrhh"],
     "onboarding.dotacion.crear": ["rrhh"],
     "onboarding.dotacion.listar": ["rrhh"],
+    "onboarding.estadisticas": ["rrhh"],
     "puestos.asignar": ["servicios_generales"],
     "cargos.listar": ["rrhh", "inventario"],
 }

@@ -1243,6 +1243,294 @@
         }
       }
     },
+    "/v1/onboarding/estadisticas/resumen-general": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Resumen General Rendimiento",
+        "operationId": "get_resumen_general_rendimiento_v1_onboarding_estadisticas_resumen_general_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenRendimientoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/estadisticas/desempenio-por-destinatario": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Desempenio Por Destinatario",
+        "operationId": "get_desempenio_por_destinatario_v1_onboarding_estadisticas_desempenio_por_destinatario_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DesempenioDestinatarioResponse"
+                  },
+                  "title": "Response Get Desempenio Por Destinatario V1 Onboarding Estadisticas Desempenio Por Destinatario Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/estadisticas/desempenio-por-solicitud": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Desempenio Por Tipo Solicitud",
+        "operationId": "get_desempenio_por_tipo_solicitud_v1_onboarding_estadisticas_desempenio_por_solicitud_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DesempenioTipoSolicitudResponse"
+                  },
+                  "title": "Response Get Desempenio Por Tipo Solicitud V1 Onboarding Estadisticas Desempenio Por Solicitud Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/estadisticas/timeline": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Timeline Rendimiento",
+        "operationId": "get_timeline_rendimiento_v1_onboarding_estadisticas_timeline_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineRendimientoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/": {
       "get": {
         "tags": [
@@ -1381,6 +1669,104 @@
         "title": "ActivatePasswordResponse",
         "description": "Modelo de respuesta de activaci\u00f3n"
       },
+      "DesempenioDestinatarioResponse": {
+        "properties": {
+          "destinatario": {
+            "type": "string",
+            "title": "Destinatario"
+          },
+          "cantidad_solicitudes": {
+            "type": "integer",
+            "title": "Cantidad Solicitudes"
+          },
+          "solicitudes_finalizadas": {
+            "type": "integer",
+            "title": "Solicitudes Finalizadas"
+          },
+          "solicitudes_rechazadas": {
+            "type": "integer",
+            "title": "Solicitudes Rechazadas"
+          },
+          "solicitudes_activas": {
+            "type": "integer",
+            "title": "Solicitudes Activas"
+          },
+          "tasa_cierre": {
+            "type": "number",
+            "title": "Tasa Cierre"
+          },
+          "tiempo_promedio_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Total Minutos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "destinatario",
+          "cantidad_solicitudes",
+          "solicitudes_finalizadas",
+          "solicitudes_rechazadas",
+          "solicitudes_activas",
+          "tasa_cierre"
+        ],
+        "title": "DesempenioDestinatarioResponse"
+      },
+      "DesempenioTipoSolicitudResponse": {
+        "properties": {
+          "especificacion": {
+            "type": "string",
+            "title": "Especificacion"
+          },
+          "cantidad_solicitudes": {
+            "type": "integer",
+            "title": "Cantidad Solicitudes"
+          },
+          "solicitudes_finalizadas": {
+            "type": "integer",
+            "title": "Solicitudes Finalizadas"
+          },
+          "solicitudes_rechazadas": {
+            "type": "integer",
+            "title": "Solicitudes Rechazadas"
+          },
+          "solicitudes_activas": {
+            "type": "integer",
+            "title": "Solicitudes Activas"
+          },
+          "tasa_cierre": {
+            "type": "number",
+            "title": "Tasa Cierre"
+          },
+          "tiempo_promedio_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Total Minutos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "especificacion",
+          "cantidad_solicitudes",
+          "solicitudes_finalizadas",
+          "solicitudes_rechazadas",
+          "solicitudes_activas",
+          "tasa_cierre"
+        ],
+        "title": "DesempenioTipoSolicitudResponse"
+      },
       "DotacionTemplateRequest": {
         "properties": {
           "encargado": {
@@ -1470,6 +1856,57 @@
         "title": "DotacionTemplateResponse",
         "description": "Modelo de respuesta de plantilla creada en DOTACION"
       },
+      "EstadoRendimientoResponse": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "cantidad_solicitudes": {
+            "type": "integer",
+            "title": "Cantidad Solicitudes"
+          },
+          "tiempo_promedio_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Minutos"
+          },
+          "tiempo_minimo_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Minimo Minutos"
+          },
+          "tiempo_maximo_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Maximo Minutos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado",
+          "cantidad_solicitudes"
+        ],
+        "title": "EstadoRendimientoResponse"
+      },
       "EstadoSolicitud": {
         "type": "string",
         "enum": [
@@ -1479,6 +1916,45 @@
           "Rechazado"
         ],
         "title": "EstadoSolicitud"
+      },
+      "EventoTimelineResponse": {
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "title": "Fecha"
+          },
+          "solicitudes_finalizadas": {
+            "type": "integer",
+            "title": "Solicitudes Finalizadas"
+          },
+          "solicitudes_rechazadas": {
+            "type": "integer",
+            "title": "Solicitudes Rechazadas"
+          },
+          "solicitudes_cerradas": {
+            "type": "integer",
+            "title": "Solicitudes Cerradas"
+          },
+          "tiempo_promedio_cierre_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Cierre Minutos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fecha",
+          "solicitudes_finalizadas",
+          "solicitudes_rechazadas",
+          "solicitudes_cerradas"
+        ],
+        "title": "EventoTimelineResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1960,6 +2436,69 @@
         ],
         "title": "PuestoTrabajoResponse"
       },
+      "ResumenRendimientoResponse": {
+        "properties": {
+          "total_solicitudes": {
+            "type": "integer",
+            "title": "Total Solicitudes"
+          },
+          "solicitudes_finalizadas": {
+            "type": "integer",
+            "title": "Solicitudes Finalizadas"
+          },
+          "solicitudes_rechazadas": {
+            "type": "integer",
+            "title": "Solicitudes Rechazadas"
+          },
+          "solicitudes_activas": {
+            "type": "integer",
+            "title": "Solicitudes Activas"
+          },
+          "tasa_cierre": {
+            "type": "number",
+            "title": "Tasa Cierre"
+          },
+          "tiempo_promedio_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Total Minutos"
+          },
+          "estado_mas_lento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Mas Lento"
+          },
+          "por_estado": {
+            "items": {
+              "$ref": "#/components/schemas/EstadoRendimientoResponse"
+            },
+            "type": "array",
+            "title": "Por Estado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_solicitudes",
+          "solicitudes_finalizadas",
+          "solicitudes_rechazadas",
+          "solicitudes_activas",
+          "tasa_cierre",
+          "por_estado"
+        ],
+        "title": "ResumenRendimientoResponse"
+      },
       "SignupRequest": {
         "properties": {
           "correo": {
@@ -2102,6 +2641,32 @@
         ],
         "title": "TeamEmployee",
         "description": "Resumen de empleado para vistas de equipo/jefes"
+      },
+      "TimelineRendimientoResponse": {
+        "properties": {
+          "fecha_inicio": {
+            "type": "string",
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "title": "Fecha Fin"
+          },
+          "eventos": {
+            "items": {
+              "$ref": "#/components/schemas/EventoTimelineResponse"
+            },
+            "type": "array",
+            "title": "Eventos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fecha_inicio",
+          "fecha_fin",
+          "eventos"
+        ],
+        "title": "TimelineRendimientoResponse"
       },
       "ValidationError": {
         "properties": {

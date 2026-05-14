@@ -22,6 +22,7 @@ from .delete import (
     delete_my_onboarding_requests,
     router as delete_router,
 )
+from .stats import router as stats_router
 
 router = APIRouter()
 router.include_router(dotacion_router)
@@ -30,6 +31,7 @@ router.include_router(list_router)
 router.include_router(update_router)
 router.include_router(delete_router)
 router.include_router(history_router)
+router.include_router(stats_router)
 
 __all__ = [
     "router",
