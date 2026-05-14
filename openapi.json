@@ -446,6 +446,50 @@
         ]
       }
     },
+    "/v1/puesto-trabajo/sugerencia": {
+      "post": {
+        "tags": [
+          "PuestoTrabajo"
+        ],
+        "summary": "Get Workstation Suggestion",
+        "operationId": "get_workstation_suggestion_v1_puesto_trabajo_sugerencia_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PuestoTrabajoAsignacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/v1/onboarding/dotacion": {
       "get": {
         "tags": [
@@ -1357,6 +1401,24 @@
               ],
               "title": "Fecha Hasta"
             }
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top N"
+            }
           }
         ],
         "responses": {
@@ -1430,6 +1492,24 @@
                 }
               ],
               "title": "Fecha Hasta"
+            }
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Top N"
             }
           }
         ],
@@ -1514,6 +1594,103 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TimelineRendimientoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/estadisticas/top-solicitudes": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Top Solicitudes",
+        "operationId": "get_top_solicitudes_v1_onboarding_estadisticas_top_solicitudes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          },
+          {
+            "name": "top_n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 5,
+              "title": "Top N"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopSolicitudResponse"
+                  },
+                  "title": "Response Get Top Solicitudes V1 Onboarding Estadisticas Top Solicitudes Get"
                 }
               }
             }
@@ -1705,6 +1882,28 @@
               }
             ],
             "title": "Tiempo Promedio Total Minutos"
+          },
+          "percentil_50_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 50 Minutos"
+          },
+          "percentil_90_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 90 Minutos"
           }
         },
         "type": "object",
@@ -1754,6 +1953,28 @@
               }
             ],
             "title": "Tiempo Promedio Total Minutos"
+          },
+          "percentil_50_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 50 Minutos"
+          },
+          "percentil_90_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 90 Minutos"
           }
         },
         "type": "object",
@@ -1898,6 +2119,28 @@
               }
             ],
             "title": "Tiempo Maximo Minutos"
+          },
+          "percentil_50_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 50 Minutos"
+          },
+          "percentil_90_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 90 Minutos"
           }
         },
         "type": "object",
@@ -2469,6 +2712,28 @@
             ],
             "title": "Tiempo Promedio Total Minutos"
           },
+          "percentil_50_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 50 Total Minutos"
+          },
+          "percentil_90_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 90 Total Minutos"
+          },
           "estado_mas_lento": {
             "anyOf": [
               {
@@ -2486,6 +2751,20 @@
             },
             "type": "array",
             "title": "Por Estado"
+          },
+          "top_destinatarios_lentos": {
+            "items": {
+              "$ref": "#/components/schemas/TopRendimientoItemResponse"
+            },
+            "type": "array",
+            "title": "Top Destinatarios Lentos"
+          },
+          "top_tipos_solicitud_lentos": {
+            "items": {
+              "$ref": "#/components/schemas/TopRendimientoItemResponse"
+            },
+            "type": "array",
+            "title": "Top Tipos Solicitud Lentos"
           }
         },
         "type": "object",
@@ -2495,7 +2774,9 @@
           "solicitudes_rechazadas",
           "solicitudes_activas",
           "tasa_cierre",
-          "por_estado"
+          "por_estado",
+          "top_destinatarios_lentos",
+          "top_tipos_solicitud_lentos"
         ],
         "title": "ResumenRendimientoResponse"
       },
@@ -2667,6 +2948,101 @@
           "eventos"
         ],
         "title": "TimelineRendimientoResponse"
+      },
+      "TopRendimientoItemResponse": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "cantidad_solicitudes": {
+            "type": "integer",
+            "title": "Cantidad Solicitudes"
+          },
+          "tiempo_promedio_total_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tiempo Promedio Total Minutos"
+          },
+          "percentil_50_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 50 Minutos"
+          },
+          "percentil_90_minutos": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentil 90 Minutos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "cantidad_solicitudes"
+        ],
+        "title": "TopRendimientoItemResponse"
+      },
+      "TopSolicitudResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "destinatario": {
+            "type": "string",
+            "title": "Destinatario"
+          },
+          "especificacion": {
+            "type": "string",
+            "title": "Especificacion"
+          },
+          "estado_actual": {
+            "type": "string",
+            "title": "Estado Actual"
+          },
+          "total_minutes": {
+            "type": "number",
+            "title": "Total Minutes"
+          },
+          "finalized_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finalized At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "destinatario",
+          "especificacion",
+          "estado_actual",
+          "total_minutes"
+        ],
+        "title": "TopSolicitudResponse"
       },
       "ValidationError": {
         "properties": {

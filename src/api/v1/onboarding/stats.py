@@ -91,6 +91,14 @@ class TimelineRendimientoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TopSolicitudResponse(BaseModel):
+    id: int
+    destinatario: str
+    especificacion: str
+    estado_actual: str
+    total_minutes: float
+    finalized_at: str | None = None
+
 def _row_to_dict(row) -> dict:
     if hasattr(row, "to_py"):
         return row.to_py()
@@ -545,3 +553,47 @@ async def get_timeline_rendimiento(
         fecha_fin=fecha_hasta_dt.date().isoformat(),
         eventos=events,
     )
+
+
+@router.get("/estadisticas/top-solicitudes", response_model=list[TopSolicitudResponse])
+async def get_top_solicitudes(
+    req: Request,
+    token_payload: dict = Security(require_permission("onboarding.estadisticas")),
+    fecha_desde: str | None = Query(default=None),
+    fecha_hasta: str | None = Query(default=None),
+    top_n: int = Query(default=5, ge=1, le=100),
+    order: str = Query(default="desc", regex="^(asc|desc)$"),
+):
+    env = req.scope["env"]
+    db = env.dataBase
+
+    fecha_desde_dt = _parse_datetime(fecha_desde, "fecha_desde")
+    fecha_hasta_dt = _parse_datetime(fecha_hasta, "fecha_hasta")
+
+    if fecha_desde_dt and fecha_hasta_dt and fecha_desde_dt > fecha_hasta_dt:
+        raise HTTPException(status_code=400, detail="fecha_desde no puede ser mayor que fecha_hasta")
+
+    _, computed = await _collect_computed_requests(db, fecha_desde_dt, fecha_hasta_dt)
+    if not computed:
+        return []
+
+    reverse = True if order == "desc" else False
+    computed_sorted = sorted(computed, key=lambda item: item.get("total_minutes") or 0.0, reverse=reverse)
+    top_items = computed_sorted[:top_n]
+
+    result: list[TopSolicitudResponse] = []
+    for item in top_items:
+        finalized_at = item.get("finalized_at")
+        finalized_iso = finalized_at.isoformat() if finalized_at is not None else None
+        result.append(
+            TopSolicitudResponse(
+                id=int(item.get("id") or 0),
+                destinatario=str(item.get("destinatario") or "Sin destinatario"),
+                especificacion=str(item.get("especificacion") or "Sin especificacion"),
+                estado_actual=str(item.get("estado_actual") or ""),
+                total_minutes=float(item.get("total_minutes") or 0.0),
+                finalized_at=finalized_iso,
+            )
+        )
+
+    return result
