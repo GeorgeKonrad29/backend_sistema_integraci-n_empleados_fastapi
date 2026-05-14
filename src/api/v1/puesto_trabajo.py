@@ -303,8 +303,18 @@ Empleado a asignar:
 - Tipo de puesto solicitado: {payload.tipo_puesto or "No especificado"}
 """
 
+    # Agregar informacion de ubicacion solicitada si viene en el payload
+    ubicacion_context = ""
+    if payload.piso or payload.fila or payload.columna:
+        ubicacion_context = f"""
+Ubicacion solicitada (preferencia):
+- Piso: {payload.piso}
+- Fila: {payload.fila}
+- Columna: {payload.columna}
+"""
+
     prompt = f"""Eres un asistente especializado en optimizacion de distribucion de espacios de trabajo en una oficina.
-{empleado_context}
+{empleado_context}{ubicacion_context}
 Datos actuales de puestos de trabajo asignados:
 - Total de puestos ocupados: {estadisticas["total_ocupados"]}
 - Distribucion por tipo de puesto: {json.dumps(estadisticas["por_tipo"])}
@@ -320,11 +330,11 @@ Ten en cuenta:
 3. La distribucion geografica (piso, fila, columna)
 4. Proximidad a colegas del mismo area
 
-Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado el puesto (piso, fila, columna aproximados) y por que."""
+Proporciona una recomendacion clara y concisa sobre los 5 mejores puestos que podrian ser asignados (piso, fila, columna aproximados) y por que."""
 
     # 6. Llamar a Cloudflare Worker AI
     try:
-        # En Cloudflare Workers, las variables se acceden como atributos del objeto env
+        # Obtener credenciales de Cloudflare
         cf_token = getattr(env, "CF_AI_TOKEN", None)
         cf_account_id = getattr(env, "CF_ACCOUNT_ID", None)
 
@@ -334,19 +344,12 @@ Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado e
                 detail="Credenciales de Cloudflare AI no configuradas. Verifica CF_AI_TOKEN y CF_ACCOUNT_ID en wrangler.jsonc",
             )
 
+        # Llamar a Cloudflare AI
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"https://api.cloudflare.com/client/v4/accounts/{cf_account_id}/ai/run/@cf/meta/llama-3-8b-instruct",
+                f"https://api.cloudflare.com/client/v4/accounts/{cf_account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
                 headers={"Authorization": f"Bearer {cf_token}"},
-                json={
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "Eres un asistente especializado en optimizacion de espacios de trabajo",
-                        },
-                        {"role": "user", "content": prompt},
-                    ]
-                },
+                json={"prompt": prompt},
             )
 
         if response.status_code != 200:
@@ -356,7 +359,7 @@ Proporciona una recomendacion clara y concisa sobre donde deberia ser asignado e
             )
 
         ai_response = response.json()
-        suggestion = ai_response.get("result", {}).get("response", "")
+        suggestion = ai_response.get("response", "")
 
         return {
             "sugerencia": suggestion,

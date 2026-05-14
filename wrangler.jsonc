@@ -31,4 +31,7 @@
       "secret_name": "JWTSecret",
     },
   ],
+  "ai": {
+    "binding": "AI",
+  },
 }
