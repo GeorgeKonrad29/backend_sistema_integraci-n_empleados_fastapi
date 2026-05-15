@@ -136,66 +136,66 @@ async def send_activation_email(
         return False
 
 
-# async def send_new_user_notification_email(
-#     req: Request,
-#     new_user_id: int,
-#     new_user_email: str,
-#     new_user_role: str,
-#     immediate_boss: str,
-# ) -> bool:
-#     """Envía notificación de nuevo ingreso al correo de pruebas."""
-#     try:
-#         env = req.scope["env"]
-#         resend_api_key = await fetch_resend_api_key(req, env)
-#     except Exception:
-#         return False
+async def send_new_user_notification_email(
+    req: Request,
+    new_user_id: int,
+    new_user_email: str,
+    new_user_role: str,
+    immediate_boss: str,
+) -> bool:
+    """Envía notificación de nuevo ingreso al correo de pruebas."""
+    try:
+        env = req.scope["env"]
+        resend_api_key = await fetch_resend_api_key(req, env)
+    except Exception:
+        return False
 
-#     from_email = _resolve_resend_from_email(req)
-#     to_email = TEST_RECIPIENT_EMAIL
-#     if not resend_api_key or not from_email or not to_email:
-#         return False
+    from_email = _resolve_resend_from_email(req)
+    to_email = TEST_RECIPIENT_EMAIL
+    if not resend_api_key or not from_email or not to_email:
+        return False
 
-#     try:
-#         from pyodide.http import pyfetch
-#     except Exception:
-#         return False
+    try:
+        from pyodide.http import pyfetch
+    except Exception:
+        return False
 
-#     email_payload = {
-#         "from": from_email,
-#         "to": [to_email],
-#         "subject": "Nuevo ingreso de usuario",
-#         "html": (
-#             "<p>Se registró un nuevo usuario en el sistema.</p>"
-#             f"<p><strong>Jefe inmediato:</strong> {immediate_boss}</p>"
-#             f"<p><strong>ID:</strong> {new_user_id}<br>"
-#             f"<strong>Correo:</strong> {new_user_email}<br>"
-#             f"<strong>Rol:</strong> {new_user_role}</p>"
-#         ),
-#     }
+    email_payload = {
+        "from": from_email,
+        "to": [to_email],
+        "subject": "Nuevo ingreso de usuario",
+        "html": (
+            "<p>Se registró un nuevo usuario en el sistema.</p>"
+            f"<p><strong>Jefe inmediato:</strong> {immediate_boss}</p>"
+            f"<p><strong>ID:</strong> {new_user_id}<br>"
+            f"<strong>Correo:</strong> {new_user_email}<br>"
+            f"<strong>Rol:</strong> {new_user_role}</p>"
+        ),
+    }
 
-#     try:
-#         response = await pyfetch(
-#             "https://api.resend.com/emails",
-#             method="POST",
-#             headers={
-#                 "Authorization": f"Bearer {resend_api_key}",
-#                 "Content-Type": "application/json",
-#             },
-#             body=json.dumps(email_payload),
-#         )
+    try:
+        response = await pyfetch(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(email_payload),
+        )
 
-#         if response.status in [200, 201, 202]:
-#             return True
+        if response.status in [200, 201, 202]:
+            return True
 
-#         try:
-#             body_text = await response.text()
-#         except Exception:
-#             body_text = "<sin cuerpo>"
+        try:
+            body_text = await response.text()
+        except Exception:
+            body_text = "<sin cuerpo>"
 
-#         print(
-#             f"[auth/signup] New-user notification rejected. status={response.status} "
-#             f"from={from_email} to={to_email} body={body_text}"
-#         )
-#         return False
-#     except Exception:
-#         return False
+        print(
+            f"[auth/signup] New-user notification rejected. status={response.status} "
+            f"from={from_email} to={to_email} body={body_text}"
+        )
+        return False
+    except Exception:
+        return False
