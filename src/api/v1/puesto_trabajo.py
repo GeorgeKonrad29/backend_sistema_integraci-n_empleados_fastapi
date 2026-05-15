@@ -219,10 +219,9 @@ async def get_workstation_suggestion(
 ):
     import json
 
-    import httpx
-
     env = req.scope["env"]
     db = env.dataBase
+    ai = env.AI  # Obtener el binding de Cloudflare Workers AI
 
     # 1. Obtener informacion del empleado a asignar
     empleado_info = None
@@ -323,56 +322,159 @@ Datos actuales de puestos de trabajo asignados:
 Listado completo de puestos ocupados:
 {json.dumps(ocupados, ensure_ascii=False, indent=2)}
 
-Basandote en esta informacion, proporciona una sugerencia sobre donde deberia ir este empleado a asignar su puesto de trabajo.
+Basandote en esta informacion, proporciona una lista de EXACTAMENTE 5 mejores posiciones para asignar el puesto de trabajo.
+
+Para cada posicion, proporciona:
+1. La ubicacion (formato: Piso X, Fila Y, Columna Z)
+2. Una puntuacion de 1-5 estrellas
+3. Una breve explicacion de por que es recomendada (máximo 2 lineas)
+
+Ordenarlas de mejor a peor (5 estrellas primero).
+
+Formato de respuesta:
+Posicion 1: Piso X, Fila Y, Columna Z | Puntuacion: X/5
+Razon: [explicacion]
+
+Posicion 2: Piso X, Fila Y, Columna Z | Puntuacion: X/5
+Razon: [explicacion]
+
+(continua para posiciones 3, 4 y 5)
+
 Ten en cuenta:
 1. La distribucion actual de empleados en su area
 2. El balance entre diferentes tipos de puestos
 3. La distribucion geografica (piso, fila, columna)
-4. Proximidad a colegas del mismo area
+4. Proximidad a colegas del mismo area"""
 
-Proporciona una recomendacion clara y concisa sobre los 5 mejores puestos que podrian ser asignados (piso, fila, columna aproximados) y por que."""
-
-    # 6. Llamar a Cloudflare Worker AI
+    # 6. Llamar a Cloudflare Workers AI usando el binding
     try:
-        # Obtener credenciales de Cloudflare
-        cf_token = getattr(env, "CF_AI_TOKEN", None)
-        cf_account_id = getattr(env, "CF_ACCOUNT_ID", None)
+        # Usar el binding de AI de Cloudflare Workers
+        ai_response = await ai.run("@cf/meta/llama-3.1-8b-instruct", {"prompt": prompt})
 
-        if not cf_token or not cf_account_id:
-            raise HTTPException(
-                status_code=500,
-                detail="Credenciales de Cloudflare AI no configuradas. Verifica CF_AI_TOKEN y CF_ACCOUNT_ID en wrangler.jsonc",
-            )
+        suggestion_text = ai_response.get("response", "")
 
-        # Llamar a Cloudflare AI
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"https://api.cloudflare.com/client/v4/accounts/{cf_account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
-                headers={"Authorization": f"Bearer {cf_token}"},
-                json={"prompt": prompt},
-            )
-
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error llamando a Cloudflare AI: {response.text}",
-            )
-
-        ai_response = response.json()
-        suggestion = ai_response.get("response", "")
+        # 7. Parsear la respuesta de la IA para extraer las 5 posiciones
+        posiciones = _parse_ai_suggestions(suggestion_text)
 
         return {
-            "sugerencia": suggestion,
+            "posiciones_recomendadas": posiciones,
+            "respuesta_ia_completa": suggestion_text,
             "estadisticas": estadisticas,
             "puestos_ocupados": ocupados,
             "empleado": empleado_info,
             "tipo_puesto_solicitado": payload.tipo_puesto,
         }
-    except httpx.RequestError as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error en la solicitud HTTP: {str(e)}"
-        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error obteniendo sugerencia: {str(e)}"
         )
+
+
+def _parse_ai_suggestions(response_text: str) -> list[dict]:
+    """
+    Parsea la respuesta de la IA para extraer las 5 posiciones recomendadas.
+    Retorna una lista de diccionarios con: posicion, piso, fila, columna, puntuacion, razon
+    """
+    import re
+
+    posiciones = []
+    lines = response_text.split("\n")
+
+    posicion_actual = None
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Buscar linea de posicion (ej: "Posicion 1: Piso 1, Fila 5, Columna 10 | Puntuacion: 5/5")
+        posicion_match = re.search(
+            r"Posicion\s+(\d+):\s*Piso\s+(\d+),\s*Fila\s+(\d+),\s*Columna\s+(\d+).*Puntuacion:\s*(\d+)/5",
+            line,
+            re.IGNORECASE,
+        )
+
+        if posicion_match:
+            # Si habia una posicion anterior, guardarla
+            if posicion_actual:
+                posiciones.append(posicion_actual)
+
+            # Crear nueva posicion
+            posicion_actual = {
+                "numero": int(posicion_match.group(1)),
+                "piso": int(posicion_match.group(2)),
+                "fila": int(posicion_match.group(3)),
+                "columna": int(posicion_match.group(4)),
+                "coordenadas": f"P{posicion_match.group(2)}-F{int(posicion_match.group(3)):02d}-C{int(posicion_match.group(4)):02d}",
+                "puntuacion": int(posicion_match.group(5)),
+                "razon": "",
+            }
+
+        # Buscar linea de razon (ej: "Razon: ...")
+        razon_match = re.search(r"Razon:\s*(.+)", line, re.IGNORECASE)
+        if razon_match and posicion_actual:
+            posicion_actual["razon"] = razon_match.group(1).strip()
+
+    # Agregar la ultima posicion si existe
+    if posicion_actual:
+        posiciones.append(posicion_actual)
+
+    # Si no se encontraron posiciones con el patron, intentar un parsing mas flexible
+    if not posiciones:
+        posiciones = _parse_ai_suggestions_flexible(response_text)
+
+    # Ordenar por puntuacion descendente (mejor primero)
+    posiciones.sort(key=lambda x: x.get("puntuacion", 0), reverse=True)
+
+    # Limitar a 5 posiciones
+    return posiciones[:5]
+
+
+def _parse_ai_suggestions_flexible(response_text: str) -> list[dict]:
+    """
+    Parsing mas flexible si el formato no es exacto.
+    Intenta extraer posiciones usando patrones mas generales.
+    """
+    import re
+
+    posiciones = []
+
+    # Buscar todos los bloques que contengan "Piso", "Fila", "Columna"
+    pattern = r"(?:Posicion\s+\d+:|\d+\.)\s*(?:Piso|P)\s+(\d+),?\s*(?:Fila|F)\s+(\d+),?\s*(?:Columna|C)\s+(\d+)"
+    matches = re.finditer(pattern, response_text, re.IGNORECASE)
+
+    posicion_num = 1
+    for match in matches:
+        piso = int(match.group(1))
+        fila = int(match.group(2))
+        columna = int(match.group(3))
+
+        # Buscar puntuacion cercana
+        context_start = max(0, match.start() - 100)
+        context_end = min(len(response_text), match.end() + 100)
+        context = response_text[context_start:context_end]
+
+        puntuacion_match = re.search(r"(\d+)/5", context)
+        puntuacion = int(puntuacion_match.group(1)) if puntuacion_match else 3
+
+        # Buscar razon
+        razon_match = re.search(
+            r"Razon[:]?\s*(.+?)(?:\n|Posicion|$)", context, re.IGNORECASE
+        )
+        razon = razon_match.group(1).strip() if razon_match else "Ubicacion recomendada"
+
+        posiciones.append(
+            {
+                "numero": posicion_num,
+                "piso": piso,
+                "fila": fila,
+                "columna": columna,
+                "coordenadas": f"P{piso}-F{fila:02d}-C{columna:02d}",
+                "puntuacion": puntuacion,
+                "razon": razon,
+            }
+        )
+
+        posicion_num += 1
+
+    return posiciones
