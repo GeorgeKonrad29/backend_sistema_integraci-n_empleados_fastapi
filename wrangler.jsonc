@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "backend-sistema-integracion-empleados-fastapi",
+  "name": "fastapi-worker",
   "main": "src/worker.py",
   "compatibility_date": "2025-11-02",
   "compatibility_flags": ["python_workers", "python_dedicated_snapshot"],
@@ -27,12 +27,12 @@
     },
     {
       "binding": "mailjetprivate",
-      "store_id": "29806d0257da4c6e996ae6340e9153c2",
+      "store_id": "365c790871861185f0a0447a316d88eb",
       "secret_name": "mailjetprivate",
     },
     {
       "binding": "mailjetpublic",
-      "store_id": "29806d0257da4c6e996ae6340e9153c2",
+      "store_id": "365c790871861185f0a0447a316d88eb",
       "secret_name": "mailjetpublic",
     },
 
@@ -41,11 +41,6 @@
       "store_id": "29806d0257da4c6e996ae6340e9153c2",
       "secret_name": "JWTSecret",
     },
-    {
-      "binding": "correoRemitente",
-      "store_id": "29806d0257da4c6e996ae6340e9153c2",
-      "secret_name": "correoRemitente",
-    }
   ],
   "ai": {
     "binding": "AI",
