@@ -217,6 +217,81 @@ async def get_workstation_suggestion(
     req: Request,
     token_payload: dict = Security(get_current_token_payload),
 ):
+    """
+    DOCUMENTACIÓN DE ERRORES POTENCIALES:
+
+    1. **Error: AttributeError en _workstation_from_row() - línea 246**
+       - Causa: Si row.coordenadas tiene un formato inválido, decode_coordinate() lanzará ValueError
+       - Síntoma: La excepción se captura silenciosamente con 'continue', ignorando puestos válidos
+       - Impacto: Datos incompletos en la sugerencia de la IA
+       - Solución: Validar coordenadas antes de procesar o loguear errores
+
+    2. **Error: Inyección de prompt (Prompt Injection) - líneas 306-332**
+       - Causa: Los valores de empleado_info y payload no se sanitizan antes de incluir en el prompt
+       - Síntoma: Un usuario malintencionado podría inyectar instrucciones en el nombre o área del empleado
+       - Impacto: Comportamiento impredecible de la IA, respuestas no autorizadas
+       - Solución: Escapar caracteres especiales o usar templates seguros
+
+    3. **Error: Dependencia externa sin fallback - línea 343**
+       - Causa: La llamada a ai.run() depende de Cloudflare Workers AI
+       - Síntoma: Si el servicio AI no está disponible, la función falla completamente
+       - Impacto: El endpoint no es resiliente; cualquier problema con AI causa error 500
+       - Solución: Implementar timeout, reintentos o respuesta por defecto
+
+    4. **Error: Asunción sobre estructura de respuesta - línea 348**
+       - Causa: Se asume que ai_response.get("response") siempre retorna string
+       - Síntoma: Si la IA retorna un formato diferente, el parsing falla silenciosamente
+       - Impacto: posiciones_recomendadas puede ser lista vacía sin explicación
+       - Solución: Validar tipo de respuesta y loguear advertencias
+
+    5. **Error: Parsing frágil de respuesta de IA - líneas 424-445**
+       - Causa: El regex espera un formato exacto de la IA ("Posicion X:", "Puntuacion: X/5")
+       - Síntoma: Si la IA usa variaciones ("Position 1:", "Rating: 5 stars"), el parsing falla
+       - Impacto: _parse_ai_suggestions retorna lista vacía, activando fallback flexible
+       - Solución: Usar modelos estructurados (JSON) en lugar de parsing de texto
+
+    6. **Error: Valores por defecto débiles en parsing flexible - líneas 459-460**
+       - Causa: Si no encuentra puntuación o razón, asume valores por defecto (puntuacion=3, razon genérica)
+       - Síntoma: Sugerencias incompletas o con contexto genérico, sin información real
+       - Impacto: Decisiones de asignación basadas en datos incorrectos
+       - Solución: Requerir que la IA responda en formato JSON estructurado
+
+    7. **Error: Falta validación de entrada del payload - línea 217**
+       - Causa: No se valida que piso, fila, columna sean números válidos si vienen en payload
+       - Síntoma: Valores negativos o fuera de rango pueden llegar al prompt de IA
+       - Impacto: La IA recibe datos inválidos en contexto de ubicación
+       - Solución: Usar Pydantic validators en PuestoTrabajoAsignacionRequest
+
+    8. **Error: Query N+1 potencial - líneas 245-255**
+       - Causa: Se ejecuta una query para obtener empleado, luego otra para puestos ocupados
+       - Síntoma: Si hay muchos empleados simultáneos, múltiples queries al servidor
+       - Impacto: Latencia innecesaria, consumo de recursos
+       - Solución: Combinar queries si es posible, o implementar caché
+
+    9. **Error: Overflow de contexto - línea 332**
+       - Causa: Si hay muchos puestos ocupados, el prompt puede exceder el límite de tokens de la IA
+       - Síntoma: La IA recibe texto truncado o rechaza procesar
+       - Impacto: Respuestas incompletas o error de la IA
+       - Solución: Limitar puestos incluidos en el prompt o paginar
+
+    10. **Error: Falta de logging - toda la función**
+        - Causa: No hay logging de pasos intermedios ni errores capturados
+        - Síntoma: Difícil depurar qué salió mal en casos de error
+        - Impacto: Debugging lento, sin trazabilidad de requests fallidos
+        - Solución: Agregar logger.info/warning/error en puntos críticos
+
+    11. **Error: Manejo inconsistente de excepciones - líneas 226-235, 240-247, 343**
+        - Causa: Algunos errores se lanzan como HTTPException, otros se ignoran
+        - Síntoma: Inconsistencia en respuestas de error al cliente
+        - Impacto: API impredecible, cliente no sabe cómo manejar errores
+        - Solución: Definir estrategia de error uniforme
+
+    12. **Error: Información sensible en respuesta - línea 356**
+        - Causa: respuesta_ia_completa y puestos_ocupados retorna datos completos
+        - Síntoma: Se expone información de todos los empleados a quien haga la request
+        - Impacto: Violación potencial de privacidad
+        - Solución: Validar permisos del usuario antes de retornar datos sensibles
+    """
     import json
 
     env = req.scope["env"]
@@ -349,9 +424,21 @@ Ten en cuenta:
     # 6. Llamar a Cloudflare Workers AI usando el binding
     try:
         # Usar el binding de AI de Cloudflare Workers
-        ai_response = await ai.run("@cf/meta/llama-3.1-8b-instruct", {"prompt": prompt})
+        # El objeto de respuesta de Cloudflare no es un dict de Python;
+        # puede ser un objeto JS-interop con atributo .response o un dict.
+        ai_response = await ai.run(
+            "@cf/meta/llama-3.1-8b-instruct",
+            inputs={"prompt": prompt},
+        )
 
-        suggestion_text = ai_response.get("response", "")
+        # Acceder a la respuesta de forma segura: primero como atributo,
+        # luego como dict, finalmente como string directo.
+        if hasattr(ai_response, "response"):
+            suggestion_text = str(ai_response.response)
+        elif isinstance(ai_response, dict):
+            suggestion_text = ai_response.get("response", "")
+        else:
+            suggestion_text = str(ai_response)
 
         # 7. Parsear la respuesta de la IA para extraer las 5 posiciones
         posiciones = _parse_ai_suggestions(suggestion_text)
@@ -364,9 +451,11 @@ Ten en cuenta:
             "empleado": empleado_info,
             "tipo_puesto_solicitado": payload.tipo_puesto,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error obteniendo sugerencia: {str(e)}"
+            status_code=500, detail=f"Error obteniendo sugerencia: {type(e).__name__}: {e}"
         )
 
 
