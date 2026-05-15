@@ -315,10 +315,15 @@ async def get_workstation_suggestion(
                     "nombre": empleado.nombre,
                     "area": empleado.area,
                 }
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=500,
-                detail=f"Error obteniendo informacion del empleado: {e}",
+                detail=(
+                    f"[Paso 1 - Consulta de empleado] "
+                    f"{type(e).__name__} al buscar empleado con id={payload.id_empleado}: {e}"
+                ),
             )
 
     # 2. Obtener todos los puestos ocupados con informacion de empleados
@@ -335,16 +340,24 @@ async def get_workstation_suggestion(
         ).all()
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error obteniendo los puestos ocupados: {e}"
+            status_code=500,
+            detail=(
+                f"[Paso 2 - Consulta de puestos ocupados] "
+                f"{type(e).__name__} al ejecutar SELECT en PUESTO_DE_TRABAJO: {e}"
+            ),
         )
 
     # 3. Procesar los datos de puestos ocupados
     ocupados = []
+    filas_invalidas = []
     for row in result.results:
         try:
             ocupado_info = _workstation_from_row(row)
             ocupados.append(ocupado_info)
-        except Exception:
+        except Exception as e:
+            filas_invalidas.append(
+                {"coordenadas": getattr(row, "coordenadas", "?"), "error": f"{type(e).__name__}: {e}"}
+            )
             continue
 
     # 4. Contar puestos ocupados por tipo y area
@@ -422,17 +435,23 @@ Ten en cuenta:
 4. Proximidad a colegas del mismo area"""
 
     # 6. Llamar a Cloudflare Workers AI usando el binding
+    _AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
     try:
-        # Usar el binding de AI de Cloudflare Workers
-        # El objeto de respuesta de Cloudflare no es un dict de Python;
-        # puede ser un objeto JS-interop con atributo .response o un dict.
         ai_response = await ai.run(
-            "@cf/meta/llama-3.1-8b-instruct",
+            _AI_MODEL,
             inputs={"prompt": prompt},
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"[Paso 6 - Llamada a Workers AI] "
+                f"{type(e).__name__} al invocar ai.run con modelo '{_AI_MODEL}': {e}"
+            ),
+        )
 
-        # Acceder a la respuesta de forma segura: primero como atributo,
-        # luego como dict, finalmente como string directo.
+    # 7. Extraer el texto de la respuesta de la IA
+    try:
         if hasattr(ai_response, "response"):
             suggestion_text = str(ai_response.response)
         elif isinstance(ai_response, dict):
@@ -440,23 +459,47 @@ Ten en cuenta:
         else:
             suggestion_text = str(ai_response)
 
-        # 7. Parsear la respuesta de la IA para extraer las 5 posiciones
-        posiciones = _parse_ai_suggestions(suggestion_text)
-
-        return {
-            "posiciones_recomendadas": posiciones,
-            "respuesta_ia_completa": suggestion_text,
-            "estadisticas": estadisticas,
-            "puestos_ocupados": ocupados,
-            "empleado": empleado_info,
-            "tipo_puesto_solicitado": payload.tipo_puesto,
-        }
+        if not suggestion_text:
+            raise ValueError(
+                f"La IA retornó una respuesta vacía (tipo recibido: {type(ai_response).__name__})"
+            )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error obteniendo sugerencia: {type(e).__name__}: {e}"
+            status_code=500,
+            detail=(
+                f"[Paso 7 - Extracción de respuesta IA] "
+                f"{type(e).__name__} al leer el campo 'response' "
+                f"(tipo objeto IA: {type(ai_response).__name__}): {e}"
+            ),
         )
+
+    # 8. Parsear las posiciones recomendadas de la respuesta de la IA
+    try:
+        posiciones = _parse_ai_suggestions(suggestion_text)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                f"[Paso 8 - Parsing de sugerencias IA] "
+                f"{type(e).__name__} al parsear la respuesta del modelo '{_AI_MODEL}': {e}"
+            ),
+        )
+
+    return {
+        "posiciones_recomendadas": posiciones,
+        "respuesta_ia_completa": suggestion_text,
+        "estadisticas": estadisticas,
+        "puestos_ocupados": ocupados,
+        "empleado": empleado_info,
+        "tipo_puesto_solicitado": payload.tipo_puesto,
+        "advertencias": (
+            [{"tipo": "filas_invalidas", "detalle": filas_invalidas}]
+            if filas_invalidas
+            else []
+        ),
+    }
 
 
 def _parse_ai_suggestions(response_text: str) -> list[dict]:
