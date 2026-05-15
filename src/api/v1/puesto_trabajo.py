@@ -610,3 +610,8 @@ def _parse_ai_suggestions_flexible(response_text: str) -> list[dict]:
         posicion_num += 1
 
     return posiciones
+
+
+@router.get("/sugerencia")
+def hay_ia():
+    return env.AI.run("@cf/meta/llama-3.1-8b-instruct", {"prompt": "hola, hay ia?"})
