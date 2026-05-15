@@ -1541,6 +1541,80 @@
         }
       }
     },
+    "/v1/onboarding/estadisticas/tiempo-promedio-por-estado": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "Get Tiempo Promedio Por Estado",
+        "operationId": "get_tiempo_promedio_por_estado_v1_onboarding_estadisticas_tiempo_promedio_por_estado_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "fecha_desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Desde"
+            }
+          },
+          {
+            "name": "fecha_hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EstadoRendimientoResponse"
+                  },
+                  "title": "Response Get Tiempo Promedio Por Estado V1 Onboarding Estadisticas Tiempo Promedio Por Estado Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/onboarding/estadisticas/timeline": {
       "get": {
         "tags": [

@@ -69,6 +69,22 @@ async def create_onboarding_request(
                 detail="La solicitud debe incluir un 'destinatario' válido",
             )
 
+        duplicate_request = await db.prepare(
+            """
+            SELECT id
+            FROM SOLICITUDES
+            WHERE id_empleado = ?
+              AND LOWER(TRIM(especificaciones)) = LOWER(TRIM(?))
+            LIMIT 1
+            """
+        ).bind(payload.id_empleado, especificacion).first()
+
+        if duplicate_request:
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe una solicitud para este empleado con el mismo tipo",
+            )
+
         template_exists = await db.prepare(
             "SELECT id FROM DOTACION WHERE LOWER(TRIM(especificacion)) = LOWER(TRIM(?)) LIMIT 1"
         ).bind(especificacion).first()

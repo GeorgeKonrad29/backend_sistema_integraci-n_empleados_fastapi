@@ -91,3 +91,153 @@ VALUES (
     49, 
     'Finalizado'
 );
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Coordinador Servicios', 
+    'servicios@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Encargado de Area', 
+    4, 
+    'Finalizado'
+);
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Coordinadora Formación', 
+    'formacion@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Encargado de Area', 
+    51, 
+    'Finalizado'
+);
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Analista Soporte', 
+    'soporte@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Operador', 
+    47, 
+    'En proceso'
+);
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Auxiliar Contable', 
+    'contabilidad@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Operador', 
+    37, 
+    'Finalizado'
+);
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Tecnico Mantenimiento', 
+    'mantenimiento@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Operador', 
+    8, 
+    'Pendiente'
+);
+
+
+INSERT INTO USUARIO (nombre, correo, contrasena, rol, cargo, estado_onboarding) 
+VALUES (
+    'Analista Producto', 
+    'producto@sinergia.com', 
+    'pbkdf2_sha256$390000$6b444e44d68c9b408d0b7073ae2d8a4b$xLT9Ki9dhGf/dLJJpJd07aeOiMCB5nr86VRG3uNOx04=',
+    'Operador', 
+    18, 
+    'Finalizado'
+);
+
+
+INSERT INTO SOLICITUDES (id_empleado, fecha_creacion, fecha_fin, estado, especificaciones, destinatario)
+VALUES (
+    (SELECT id FROM USUARIO WHERE correo = 'soporte@sinergia.com' LIMIT 1),
+    '2026-05-14 08:00:00',
+    '2026-05-20 18:00:00',
+    'En proceso',
+    'Solicitud de inducción y acceso al curso de cultura cooperativa para el nuevo colaborador.',
+    'Formación y Capacitación'
+);
+
+
+INSERT INTO SOLICITUDES (id_empleado, fecha_creacion, fecha_fin, estado, especificaciones, destinatario)
+VALUES (
+    (SELECT id FROM USUARIO WHERE correo = 'soporte@sinergia.com' LIMIT 1),
+    '2026-05-14 08:15:00',
+    '2026-05-21 18:00:00',
+    'Pendiente',
+    'Solicitud de puesto de trabajo, carnet y acceso físico a oficina principal.',
+    'Servicios generales'
+);
+
+
+INSERT INTO SOLICITUDES (id_empleado, fecha_creacion, fecha_fin, estado, especificaciones, destinatario)
+VALUES (
+    (SELECT id FROM USUARIO WHERE correo = 'producto@sinergia.com' LIMIT 1),
+    '2026-05-14 09:00:00',
+    '2026-05-18 18:00:00',
+    'Finalizado',
+    'Solicitud de capacitación en portafolio de productos y servicios.',
+    'Formación y Capacitación'
+);
+
+
+INSERT INTO HISTORIAL (id_solicitud, fecha_cambio, tipo_cambio, estado_antiguo, nuevo_estado)
+VALUES (
+    (
+        SELECT id
+        FROM SOLICITUDES
+        WHERE id_empleado = (SELECT id FROM USUARIO WHERE correo = 'soporte@sinergia.com' LIMIT 1)
+          AND fecha_creacion = '2026-05-14 08:00:00'
+          AND destinatario = 'Formación y Capacitación'
+        LIMIT 1
+    ),
+    '2026-05-14 08:00:00',
+    'Creación',
+    NULL,
+    'En proceso'
+);
+
+
+INSERT INTO HISTORIAL (id_solicitud, fecha_cambio, tipo_cambio, estado_antiguo, nuevo_estado)
+VALUES (
+    (
+        SELECT id
+        FROM SOLICITUDES
+        WHERE id_empleado = (SELECT id FROM USUARIO WHERE correo = 'soporte@sinergia.com' LIMIT 1)
+          AND fecha_creacion = '2026-05-14 08:15:00'
+          AND destinatario = 'Servicios generales'
+        LIMIT 1
+    ),
+    '2026-05-14 08:15:00',
+    'Creación',
+    NULL,
+    'Pendiente'
+);
+
+
+INSERT INTO HISTORIAL (id_solicitud, fecha_cambio, tipo_cambio, estado_antiguo, nuevo_estado)
+VALUES (
+    (
+        SELECT id
+        FROM SOLICITUDES
+        WHERE id_empleado = (SELECT id FROM USUARIO WHERE correo = 'producto@sinergia.com' LIMIT 1)
+          AND fecha_creacion = '2026-05-14 09:00:00'
+          AND destinatario = 'Formación y Capacitación'
+        LIMIT 1
+    ),
+    '2026-05-14 09:00:00',
+    'Creación',
+    NULL,
+    'Finalizado'
+);

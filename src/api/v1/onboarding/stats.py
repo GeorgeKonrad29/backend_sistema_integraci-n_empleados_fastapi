@@ -520,6 +520,29 @@ async def get_desempenio_por_tipo_solicitud(
     return [DesempenioTipoSolicitudResponse.model_validate(item) for item in grouped]
 
 
+@router.get("/estadisticas/tiempo-promedio-por-estado", response_model=list[EstadoRendimientoResponse])
+async def get_tiempo_promedio_por_estado(
+    req: Request,
+    token_payload: dict = Security(require_permission("onboarding.estadisticas")),
+    fecha_desde: str | None = Query(default=None),
+    fecha_hasta: str | None = Query(default=None),
+):
+    env = req.scope["env"]
+    db = env.dataBase
+
+    fecha_desde_dt = _parse_datetime(fecha_desde, "fecha_desde")
+    fecha_hasta_dt = _parse_datetime(fecha_hasta, "fecha_hasta")
+
+    if fecha_desde_dt and fecha_hasta_dt and fecha_desde_dt > fecha_hasta_dt:
+        raise HTTPException(status_code=400, detail="fecha_desde no puede ser mayor que fecha_hasta")
+
+    solicitudes, computed = await _collect_computed_requests(db, fecha_desde_dt, fecha_hasta_dt)
+    if not solicitudes:
+        return []
+
+    return _build_estado_summary(computed)
+
+
 @router.get("/estadisticas/timeline", response_model=TimelineRendimientoResponse)
 async def get_timeline_rendimiento(
     req: Request,
