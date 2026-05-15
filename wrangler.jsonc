@@ -28,12 +28,12 @@
     {
       "binding": "mailjetprivate",
       "store_id": "29806d0257da4c6e996ae6340e9153c2",
-      "secret_name": "mailjetprivate",
+      "secret_name": "mailjet_private_key",
     },
     {
       "binding": "mailjetpublic",
       "store_id": "29806d0257da4c6e996ae6340e9153c2",
-      "secret_name": "mailjetpublic",
+      "secret_name": "mailjet_public_key",
     },
 
     {
