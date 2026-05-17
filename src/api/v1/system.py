@@ -39,3 +39,7 @@ async def get_database_tables(req: Request):
         return {"tables": tables, "count": len(tables)}
     except Exception as e:
         return {"error": str(e), "status": "error"}
+
+@router.get("/ia")
+def hay_ia():
+    return env.AI.run("@cf/meta/llama-3.1-8b-instruct", {"prompt": "hola, hay ia?"})
