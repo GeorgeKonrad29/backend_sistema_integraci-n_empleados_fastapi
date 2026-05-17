@@ -435,71 +435,77 @@ Ten en cuenta:
 4. Proximidad a colegas del mismo area"""
 
     # 6. Llamar a Cloudflare Workers AI usando el binding
-    _AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+    import requests
+    API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/712ea7d21b6397f0acea15142a4f3c76/ai/run/"
+    headers = {"Authorization": f"Bearer {req.scope['env'].token_ia}"}
+    model =  'openai/gpt-5.5'
+    inputs = [
+        { "role": "user", "content": prompt}
+    ]
+    input = { "messages": inputs }
+    
+    
     try:
-        ai_response = await ai.run(
-            _AI_MODEL,
-            inputs={"prompt": prompt},
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"[Paso 6 - Llamada a Workers AI] "
-                f"{type(e).__name__} al invocar ai.run con modelo '{_AI_MODEL}': {e}"
-            ),
-        )
+        response = requests.post(f"{API_BASE_URL}{model}", headers=headers, json=input)
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=(
+    #             f"[Paso 6 - Llamada a Workers AI] "
+    #             f"{type(e).__name__} al invocar ai.run con modelo '{_AI_MODEL}': {e}"
+    #         ),
+    #     )
 
-    # 7. Extraer el texto de la respuesta de la IA
-    try:
-        if hasattr(ai_response, "response"):
-            suggestion_text = str(ai_response.response)
-        elif isinstance(ai_response, dict):
-            suggestion_text = ai_response.get("response", "")
-        else:
-            suggestion_text = str(ai_response)
+    # # 7. Extraer el texto de la respuesta de la IA
+    # try:
+    #     if hasattr(ai_response, "response"):
+    #         suggestion_text = str(ai_response.response)
+    #     elif isinstance(ai_response, dict):
+    #         suggestion_text = ai_response.get("response", "")
+    #     else:
+    #         suggestion_text = str(ai_response)
 
-        if not suggestion_text:
-            raise ValueError(
-                f"La IA retornó una respuesta vacía (tipo recibido: {type(ai_response).__name__})"
-            )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"[Paso 7 - Extracción de respuesta IA] "
-                f"{type(e).__name__} al leer el campo 'response' "
-                f"(tipo objeto IA: {type(ai_response).__name__}): {e}"
-            ),
-        )
+    #     if not suggestion_text:
+    #         raise ValueError(
+    #             f"La IA retornó una respuesta vacía (tipo recibido: {type(ai_response).__name__})"
+    #         )
+    # except HTTPException:
+    #     raise
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=(
+    #             f"[Paso 7 - Extracción de respuesta IA] "
+    #             f"{type(e).__name__} al leer el campo 'response' "
+    #             f"(tipo objeto IA: {type(ai_response).__name__}): {e}"
+    #         ),
+    #     )
 
-    # 8. Parsear las posiciones recomendadas de la respuesta de la IA
-    try:
-        posiciones = _parse_ai_suggestions(suggestion_text)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"[Paso 8 - Parsing de sugerencias IA] "
-                f"{type(e).__name__} al parsear la respuesta del modelo '{_AI_MODEL}': {e}"
-            ),
-        )
+    # # 8. Parsear las posiciones recomendadas de la respuesta de la IA
+    # try:
+    #     posiciones = _parse_ai_suggestions(suggestion_text)
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail=(
+    #             f"[Paso 8 - Parsing de sugerencias IA] "
+    #             f"{type(e).__name__} al parsear la respuesta del modelo '{_AI_MODEL}': {e}"
+    #         ),
+    #     )
 
-    return {
-        "posiciones_recomendadas": posiciones,
-        "respuesta_ia_completa": suggestion_text,
-        "estadisticas": estadisticas,
-        "puestos_ocupados": ocupados,
-        "empleado": empleado_info,
-        "tipo_puesto_solicitado": payload.tipo_puesto,
-        "advertencias": (
-            [{"tipo": "filas_invalidas", "detalle": filas_invalidas}]
-            if filas_invalidas
-            else []
-        ),
-    }
+    # return {
+    #     "posiciones_recomendadas": posiciones,
+    #     "respuesta_ia_completa": suggestion_text,
+    #     "estadisticas": estadisticas,
+    #     "puestos_ocupados": ocupados,
+    #     "empleado": empleado_info,
+    #     "tipo_puesto_solicitado": payload.tipo_puesto,
+    #     "advertencias": (
+    #         [{"tipo": "filas_invalidas", "detalle": filas_invalidas}]
+    #         if filas_invalidas
+    #         else []
+    #     ),
+    # }
 
 
 def _parse_ai_suggestions(response_text: str) -> list[dict]:
