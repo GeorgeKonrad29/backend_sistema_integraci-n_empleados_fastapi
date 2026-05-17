@@ -41,7 +41,7 @@ async def get_database_tables(req: Request):
         return {"error": str(e), "status": "error"}
 
 @router.get("/ia")
-def hay_ia(req: Request):
+async def hay_ia(req: Request):
     import requests
     API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/712ea7d21b6397f0acea15142a4f3c76/ai/run/"
     headers = {"Authorization": f"Bearer {req.scope['env'].token_ia}"}
