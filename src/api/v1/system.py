@@ -46,7 +46,7 @@ def hay_ia(req: Request):
     return env.AI.run('openai/gpt-5.5',  {
     messages: [
       {
-        role: 'admin',
+        role: 'user',
         content: 'hay ia?',
       },
     ],
