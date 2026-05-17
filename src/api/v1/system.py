@@ -41,5 +41,6 @@ async def get_database_tables(req: Request):
         return {"error": str(e), "status": "error"}
 
 @router.get("/ia")
-def hay_ia():
+def hay_ia(req: Request):
+    env = req.scope["env"]
     return env.AI.run("@cf/meta/llama-3.1-8b-instruct", {"prompt": "hola, hay ia?"})
