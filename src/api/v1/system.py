@@ -49,9 +49,7 @@ async def hay_ia(req: Request):
     model = "@cf/meta/llama-3.1-8b-instruct"  # Modelo válido de Cloudflare AI
     
     payload = {
-        "messages": [
-            {"role": "user", "content": "hay ia? :/"}
-        ]
+        "prompt": "hay ia? :/"
     }
 
     async with httpx.AsyncClient() as client:
