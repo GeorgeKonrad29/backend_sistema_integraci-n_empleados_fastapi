@@ -42,15 +42,13 @@ async def get_database_tables(req: Request):
 
 @router.get("/ia")
 def hay_ia(req: Request):
-    env = req.scope["env"]
-    return env.AI.run('openai/gpt-5.5',  {
-    messages: [
-      {
-        role: 'user',
-        content: 'hay ia?',
-      },
-    ],
-  },
-  {
-    gateway: { id: 'default' },
-  })
+    import requests
+    API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/712ea7d21b6397f0acea15142a4f3c76/ai/run/"
+    headers = {f"Authorization": "Bearer {req.scope['env'].token_ia}"}
+    model =  'openai/gpt-5.5'
+    inputs = [
+        { "role": "user", "content": "hay ia? "}
+    ]
+    input = { "messages": inputs }
+    response = requests.post(f"{API_BASE_URL}{model}", headers=headers, json=input)
+    return response.json()
