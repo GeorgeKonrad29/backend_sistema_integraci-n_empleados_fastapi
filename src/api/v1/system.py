@@ -42,18 +42,16 @@ async def get_database_tables(req: Request):
 
 @router.get("/ia")
 async def hay_ia(req: Request):
-    ai = req.scope["env"].AI
-    model =  'openai/gpt-5.5'
+    env = req.scope["env"]
+    ai = env.AI
 
-    result = await ai.run(model, {
-    messages: [
-      {
-        role: 'user',
-        content: 'hay ia? :/',
-      },
-    ],
-  },
-  {
-    gateway: { id: 'default' },
-  })
-    return result
+    if ai is None:
+        return {"error": "El binding 'AI' no está disponible. Asegúrate de haber desplegado el worker con 'npx wrangler deploy' después de agregar el binding en wrangler.jsonc"}
+
+    model = "@cf/meta/llama-3.1-8b-instruct"
+
+    try:
+        result = await ai.run(model, { "prompt": "hay ia? :/" })
+        return result
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}
