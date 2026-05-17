@@ -42,21 +42,8 @@ async def get_database_tables(req: Request):
 
 @router.get("/ia")
 async def hay_ia(req: Request):
-    import httpx
+    ai = req.scope["env"].AI
+    model = "@cf/meta/llama-3.1-8b-instruct"
 
-    API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/712ea7d21b6397f0acea15142a4f3c76/ai/run/"
-    headers = {"Authorization": f"Bearer {req.scope['env'].token_ia}"}
-    model = "@cf/meta/llama-3.1-8b-instruct"  # Modelo válido de Cloudflare AI
-    
-    payload = {
-        "prompt": "hay ia? :/"
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{API_BASE_URL}{model}",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
-        return response.json()
+    result = await ai.run(model, { "prompt": "hay ia? :/" })
+    return result

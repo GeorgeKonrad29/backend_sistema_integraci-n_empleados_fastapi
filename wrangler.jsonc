@@ -12,6 +12,9 @@
     "CF_AI_TOKEN": "tu_token_de_cloudflare",
     "CF_ACCOUNT_ID": "tu_account_id_de_cloudflare",
   },
+  "ai": {
+    "binding": "AI"
+  },
   "d1_databases": [
     {
       "binding": "dataBase",
