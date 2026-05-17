@@ -44,7 +44,7 @@ async def get_database_tables(req: Request):
 def hay_ia(req: Request):
     import requests
     API_BASE_URL = "https://api.cloudflare.com/client/v4/accounts/712ea7d21b6397f0acea15142a4f3c76/ai/run/"
-    headers = {f"Authorization": "Bearer {req.scope['env'].token_ia}"}
+    headers = {"Authorization": f"Bearer {req.scope['env'].token_ia}"}
     model =  'openai/gpt-5.5'
     inputs = [
         { "role": "user", "content": "hay ia? "}
