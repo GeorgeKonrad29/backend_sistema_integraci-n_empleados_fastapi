@@ -47,7 +47,7 @@ def hay_ia(req: Request):
     headers = {"Authorization": f"Bearer {req.scope['env'].token_ia}"}
     model =  'openai/gpt-5.5'
     inputs = [
-        { "role": "user", "content": "hay ia? "}
+        { "role": "user", "content": "hay ia? :/ "}
     ]
     input = { "messages": inputs }
     response = requests.post(f"{API_BASE_URL}{model}", headers=headers, json=input)
