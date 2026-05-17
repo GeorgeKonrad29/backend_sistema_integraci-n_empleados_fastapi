@@ -43,7 +43,17 @@ async def get_database_tables(req: Request):
 @router.get("/ia")
 async def hay_ia(req: Request):
     ai = req.scope["env"].AI
-    model = "@cf/meta/llama-3.1-8b-instruct"
+    model =  'openai/gpt-5.5'
 
-    result = await ai.run(model, { "prompt": "hay ia? :/" })
+    result = await ai.run(model, {
+    messages: [
+      {
+        role: 'user',
+        content: 'hay ia? :/',
+      },
+    ],
+  },
+  {
+    gateway: { id: 'default' },
+  })
     return result
