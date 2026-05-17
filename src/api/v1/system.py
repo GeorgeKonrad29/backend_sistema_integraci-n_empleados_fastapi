@@ -50,5 +50,5 @@ async def hay_ia(req: Request):
         { "role": "user", "content": "hay ia? :/ "}
     ]
     input = { "messages": inputs }
-    response = requests.post(f"{API_BASE_URL}{model}", headers=headers, json=input)
+    response = await requests.post(f"{API_BASE_URL}{model}", headers=headers, json=input)
     return response.json()
