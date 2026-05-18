@@ -52,6 +52,7 @@ async def hay_ia(req: Request):
 
     try:
         result = await ai.run(model, { "prompt": "hay ia? :/" })
-        return result.to_py()  # Convierte JsProxy → dict Python nativo
+        # Esquema retornado: { "response": str, "usage": { "prompt_tokens", "completion_tokens", "total_tokens" } }
+        return result.to_py()
     except Exception as e:
         return {"error": str(e), "type": type(e).__name__}

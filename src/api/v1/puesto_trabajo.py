@@ -315,18 +315,9 @@ Empleado a asignar:
 - Tipo de puesto solicitado: {payload.tipo_puesto or "No especificado"}
 """
 
-    # Agregar informacion de ubicacion solicitada si viene en el payload
-    ubicacion_context = ""
-    if payload.piso or payload.fila or payload.columna:
-        ubicacion_context = f"""
-Ubicacion solicitada (preferencia):
-- Piso: {payload.piso}
-- Fila: {payload.fila}
-- Columna: {payload.columna}
-"""
 
     prompt = f"""Eres un asistente especializado en optimizacion de distribucion de espacios de trabajo en una oficina.
-{empleado_context}{ubicacion_context}
+{empleado_context}
 Datos actuales de puestos de trabajo asignados:
 - Total de puestos ocupados: {estadisticas["total_ocupados"]}
 - Distribucion por tipo de puesto: {json.dumps(estadisticas["por_tipo"])}
@@ -357,20 +348,24 @@ Ten en cuenta:
 1. La distribucion actual de empleados en su area
 2. El balance entre diferentes tipos de puestos
 3. La distribucion geografica (piso, fila, columna)
-4. Proximidad a colegas del mismo area"""
+4. Proximidad a colegas del mismo area
+5. el output final es estricto, una lista del 1 al 5 con las coordenadas, la puntuacion y la razon en una frase pequeña
+, sin transicion, sin texto de inicio o final, simplemente la lista de la forma indicada"""
+
 
     _AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
     try:
         ai_response_raw = await ai.run(_AI_MODEL, {"prompt": prompt})
-        ai_response = ai_response_raw.to_py()
+        ai_response = ai_response_raw.to_py()  # JsProxy → dict Python
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"[Paso 6 - Llamada a Workers AI] {type(e).__name__}: {e}",
         )
 
-    # 7. Extraer el texto de respuesta (ai_response ya es dict Python tras .to_py())
+    # 7. Extraer campos del esquema: { "response": str, "usage": { ... } }
     suggestion_text = ai_response.get("response", "") if isinstance(ai_response, dict) else str(ai_response)
+    usage = ai_response.get("usage") if isinstance(ai_response, dict) else None
     if not suggestion_text:
         raise HTTPException(
             status_code=500,
@@ -383,10 +378,7 @@ Ten en cuenta:
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=(
-                f"[Paso 8 - Parsing de sugerencias IA] "
-                f"{type(e).__name__} al parsear la respuesta del modelo '{_AI_MODEL}': {e}"
-            ),
+            detail=f"[Paso 8 - Parsing de sugerencias IA] {type(e).__name__}: {e}",
         )
 
     return {
@@ -396,6 +388,7 @@ Ten en cuenta:
         "puestos_ocupados": ocupados,
         "empleado": empleado_info,
         "tipo_puesto_solicitado": payload.tipo_puesto,
+        "uso_tokens": usage,
         "advertencias": (
             [{"tipo": "filas_invalidas", "detalle": filas_invalidas}]
             if filas_invalidas
