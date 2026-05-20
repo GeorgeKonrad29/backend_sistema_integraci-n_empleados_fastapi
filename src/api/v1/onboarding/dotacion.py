@@ -34,7 +34,7 @@ def _row_to_dotacion_response(row) -> dict:
 @router.get("/dotacion", response_model=list[DotacionTemplateResponse])
 async def list_dotacion_templates(
     req: Request,
-    token_payload: dict = Security(require_permission("onboarding.dotacion.listar")),
+    token_payload: dict = Security(get_current_token_payload),
 ):
     """
     Obtiene todos los registros de DOTACION.
