@@ -31,6 +31,8 @@ async def get_onboarding_request_history(
             FROM SOLICITUDES s
             JOIN USUARIO u ON u.id = s.id_empleado
             WHERE s.id = ?
+              AND s.estado != 'Eliminada'
+              AND (u.estado_onboarding IS NULL OR u.estado_onboarding != 'Eliminada')
             LIMIT 1
             """
         ).bind(solicitud_id).first()

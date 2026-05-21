@@ -149,6 +149,7 @@ async def _fetch_source_data(db) -> tuple[list[dict], dict[int, list[dict]]]:
         FROM SOLICITUDES s
         JOIN USUARIO u ON u.id = s.id_empleado
         JOIN JERARQUIA j ON j.id = u.cargo
+        WHERE s.estado != 'Eliminada' AND (u.estado_onboarding IS NULL OR u.estado_onboarding != 'Eliminada')
         ORDER BY s.id
         """
     ).all()
