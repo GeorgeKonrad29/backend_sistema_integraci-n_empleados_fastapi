@@ -402,14 +402,16 @@ async def advance_user_onboarding_state(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     estado_actual = str(getattr(current, "estado_onboarding", None) or "")
-    if estado_actual == "Pendiente":
-        estado_siguiente = "En proceso"
-    elif estado_actual == "En proceso":
-        estado_siguiente = "Finalizado"
-    elif estado_actual == "Finalizado":
+
+    if estado_actual == "Finalizado":
         raise HTTPException(status_code=400, detail="El estado ya está en su valor final")
-    else:
-        raise HTTPException(status_code=400, detail=f"Estado actual inválido: {estado_actual}")
+
+    if estado_actual == "Eliminada":
+        raise HTTPException(status_code=400, detail="No se puede actualizar el estado de un usuario eliminado")
+
+    # Cambio solicitado: el usuario titular puede invocar este endpoint
+    # y el estado pasará directamente a 'Finalizado'.
+    estado_siguiente = "Finalizado"
 
     try:
         updated = await db.prepare(
