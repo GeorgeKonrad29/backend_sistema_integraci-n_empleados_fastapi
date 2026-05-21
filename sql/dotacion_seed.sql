@@ -123,3 +123,31 @@ VALUES ('Coordinador de servicios corporativos', 'Bienes y Servicios', 'Extintor
 
 INSERT INTO DOTACION (encargado, tipo, especificacion) 
 VALUES ('Coordinador de servicios corporativos', 'Bienes y Servicios', 'Botiquín de primeros auxilios - Completo, para emergencias');
+
+-- ============================================================================
+-- AREA DE SERVICIOS GENERALES: Plantillas de OFICINAS (para asignación de oficinas)
+-- ============================================================================
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 101 - Oficina privada, ventana, planta 1');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 102 - Oficina privada, sin ventana, planta 1');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 201 - Oficina compartida, 2 puestos, planta 2');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 202 - Oficina compartida, 4 puestos, planta 2');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 301 - Oficina gerencial, ventana, planta 3');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 302 - Oficina gerencial, sin ventana, planta 3');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 401 - Oficina ejecutiva, planta 4');
+
+INSERT INTO DOTACION (encargado, tipo, especificacion)
+VALUES ('Coordinador de servicios corporativos', 'Servicios Generales', 'Oficina 402 - Oficina de proyectos, espacio flexible, planta 4');

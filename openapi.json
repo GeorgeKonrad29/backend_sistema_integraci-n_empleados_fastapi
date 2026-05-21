@@ -879,6 +879,65 @@
         }
       }
     },
+    "/v1/onboarding/mi-equipo/empleados": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "List My Team Employees All",
+        "description": "Devuelve todos los usuarios que están a cargo del empleado logueado (informes directos).\n- Si `estado` es proporcionado, filtra por `estado_onboarding`.\n- Por defecto excluye usuarios marcados como 'Eliminada'.",
+        "operationId": "list_my_team_employees_all_v1_onboarding_mi_equipo_empleados_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamEmployee"
+                  },
+                  "title": "Response List My Team Employees All V1 Onboarding Mi Equipo Empleados Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/onboarding/solicitudes-asignadas": {
       "get": {
         "tags": [
