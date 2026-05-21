@@ -91,25 +91,30 @@ async def delete_onboarding_request(
         )
 
     try:
-        # 1. Eliminar historial de la solicitud
+        # 1. Marcar la solicitud como eliminada (soft-delete)
+        previous_estado = getattr(solicitud, "estado", None)
         await db.prepare(
-            "DELETE FROM HISTORIAL WHERE id_solicitud = ?"
+            "UPDATE SOLICITUDES SET estado = 'Eliminada' WHERE id = ?"
         ).bind(solicitud_id).run()
 
-        # 2. Eliminar la solicitud
-        await db.prepare(
-            "DELETE FROM SOLICITUDES WHERE id = ?"
-        ).bind(solicitud_id).run()
+        # 2. Registrar el cambio en el historial en lugar de eliminarlo
+        await _register_history(
+            db=db,
+            id_solicitud=int(solicitud_id),
+            tipo_cambio="ELIMINACION",
+            valor_anterior=previous_estado,
+            valor_nuevo="Eliminada",
+        )
 
         return {
             "status": "ok",
-            "message": f"Solicitud de onboarding (ID: {solicitud_id}) eliminada correctamente",
+            "message": f"Solicitud de onboarding (ID: {solicitud_id}) marcada como eliminada",
             "deleted_request": {
                 "id": solicitud.id,
                 "id_empleado": solicitud.id_empleado,
                 "nombre_empleado": solicitud.nombre_empleado,
                 "fecha_creacion": solicitud.fecha_creacion,
-                "estado": solicitud.estado,
+                "estado": "Eliminada",
             }
         }
 
@@ -151,19 +156,23 @@ async def delete_my_onboarding_requests(
 
         deleted_ids = []
         
-        # Eliminar cada solicitud y su historial
+        # Marcar cada solicitud como eliminada y registrar historial
         for solicitud_row in solicitudes.results:
             sid = solicitud_row.id
-            
-            # Eliminar historial
+
+            # Actualizar estado a 'Eliminada'
             await db.prepare(
-                "DELETE FROM HISTORIAL WHERE id_solicitud = ?"
+                "UPDATE SOLICITUDES SET estado = 'Eliminada' WHERE id = ?"
             ).bind(sid).run()
 
-            # Eliminar solicitud
-            await db.prepare(
-                "DELETE FROM SOLICITUDES WHERE id = ?"
-            ).bind(sid).run()
+            # Registrar el cambio en el historial
+            await _register_history(
+                db=db,
+                id_solicitud=int(sid),
+                tipo_cambio="ELIMINACION",
+                valor_anterior="Pendiente",
+                valor_nuevo="Eliminada",
+            )
 
             deleted_ids.append(sid)
 

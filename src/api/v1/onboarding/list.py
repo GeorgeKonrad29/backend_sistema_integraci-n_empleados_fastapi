@@ -25,7 +25,8 @@ async def list_onboarding_requests(
     db = env.dataBase
 
     try:
-        query_result = await db.prepare("SELECT * FROM SOLICITUDES ORDER BY fecha_creacion DESC").all()
+        # Por defecto no mostrar solicitudes marcadas como 'Eliminada'
+        query_result = await db.prepare("SELECT * FROM SOLICITUDES WHERE estado != 'Eliminada' ORDER BY fecha_creacion DESC").all()
         return _rows_to_onboarding_response_list(query_result.results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener solicitudes: {str(e)}")
@@ -81,6 +82,9 @@ async def list_my_onboarding_requests(
     if estado is not None:
         where_clauses.append("estado = ?")
         bindings.append(estado)
+    else:
+        # Excluir solicitudes eliminadas por defecto
+        where_clauses.append("estado != 'Eliminada'")
 
     if fecha_desde_iso is not None:
         where_clauses.append("fecha_creacion >= ?")
@@ -150,6 +154,8 @@ async def list_team_onboarding_requests(
     if estado is not None:
         where_clauses.append("s.estado = ?")
         bindings.append(estado)
+    else:
+        where_clauses.append("s.estado != 'Eliminada'")
 
     if fecha_desde_iso is not None:
         where_clauses.append("s.fecha_creacion >= ?")

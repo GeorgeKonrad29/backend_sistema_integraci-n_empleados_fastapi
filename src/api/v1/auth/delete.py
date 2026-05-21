@@ -59,44 +59,46 @@ async def delete_user(
         )
 
     try:
-        # 1. Obtener todas las solicitudes del usuario para eliminar historiales
+        # 1. Obtener todas las solicitudes del usuario para marcarlas como eliminadas
         solicitudes = await db.prepare(
-            "SELECT id FROM SOLICITUDES WHERE id_empleado = ?"
+            "SELECT id, estado FROM SOLICITUDES WHERE id_empleado = ?"
         ).bind(user_id).all()
 
-        # 2. Eliminar historiales de las solicitudes
+        # 2. Marcar cada solicitud como eliminada y registrar historial
         for solicitud_row in solicitudes.results:
+            sid = solicitud_row.id
+            previous_estado = getattr(solicitud_row, "estado", None)
             await db.prepare(
-                "DELETE FROM HISTORIAL WHERE id_solicitud = ?"
-            ).bind(solicitud_row.id).run()
+                "UPDATE SOLICITUDES SET estado = 'Eliminada' WHERE id = ?"
+            ).bind(sid).run()
 
-        # 3. Eliminar solicitudes del usuario
-        await db.prepare(
-            "DELETE FROM SOLICITUDES WHERE id_empleado = ?"
-        ).bind(user_id).run()
+            # Registrar evento de eliminación en HISTORIAL
+            old_value = "" if previous_estado is None else str(previous_estado)
+            await db.prepare(
+                """
+                INSERT INTO HISTORIAL (
+                    id_solicitud,
+                    fecha_cambio,
+                    tipo_cambio,
+                    estado_antiguo,
+                    nuevo_estado
+                ) VALUES (?, datetime('now'), ?, ?, ?)
+                """
+            ).bind(sid, "ELIMINACION", old_value, "Eliminada").run()
 
-        # 4. Desasignar puesto de trabajo
+        # 3. Marcar usuario como eliminado mediante estado_onboarding
         await db.prepare(
-            "UPDATE PUESTO_DE_TRABAJO SET id_empleado = NULL WHERE id_empleado = ?"
-        ).bind(user_id).run()
-
-        # 5. Eliminar registro de activación/confirmación de contraseña
-        await db.prepare(
-            "DELETE FROM ACTIVACION_USUARIO WHERE user_id = ?"
-        ).bind(user_id).run()
-
-        # 6. Eliminar usuario
-        await db.prepare(
-            "DELETE FROM USUARIO WHERE id = ?"
+            "UPDATE USUARIO SET estado_onboarding = 'Eliminada' WHERE id = ?"
         ).bind(user_id).run()
 
         return {
             "status": "ok",
-            "message": f"Usuario '{user.nombre}' (ID: {user_id}) eliminado correctamente",
+            "message": f"Usuario '{user.nombre}' (ID: {user_id}) marcado como eliminado",
             "deleted_user": {
                 "id": user.id,
                 "nombre": user.nombre,
                 "correo": user.correo,
+                "estado_onboarding": "Eliminada",
             }
         }
 
