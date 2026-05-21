@@ -238,6 +238,67 @@ async def list_my_team_employees_pending_onboarding(
     return employees
 
 
+@router.get("/mi-equipo/empleados", response_model=list[TeamEmployee])
+async def list_my_team_employees_all(
+    req: Request,
+    token_payload: dict = Security(get_current_token_payload),
+    estado: str | None = Query(default=None),
+):
+    """
+    Devuelve todos los usuarios que están a cargo del empleado logueado (informes directos).
+    - Si `estado` es proporcionado, filtra por `estado_onboarding`.
+    - Por defecto excluye usuarios marcados como 'Eliminada'.
+    """
+    env = req.scope["env"]
+    db = env.dataBase
+
+    cargo_jefe = token_payload.get("cargo")
+    if cargo_jefe is None:
+        raise HTTPException(status_code=400, detail="El token no contiene el cargo del usuario")
+
+    valid_states = {"Pendiente", "En proceso", "Finalizado", "Rechazado"}
+    if estado is not None and estado not in valid_states:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Use uno de: {sorted(valid_states)}")
+
+    try:
+        if estado is None:
+            query = '''
+            SELECT u.id, u.nombre, u.correo, u.cargo, u.estado_onboarding, j.nombre_cargo, j.area
+            FROM USUARIO u
+            JOIN JERARQUIA j ON j.id = u.cargo
+            WHERE j.id_jefe_inmediato = ? AND (u.estado_onboarding IS NULL OR u.estado_onboarding != 'Eliminada')
+            ORDER BY u.nombre
+            '''
+            query_result = await db.prepare(query).bind(int(cargo_jefe)).all()
+        else:
+            query = '''
+            SELECT u.id, u.nombre, u.correo, u.cargo, u.estado_onboarding, j.nombre_cargo, j.area
+            FROM USUARIO u
+            JOIN JERARQUIA j ON j.id = u.cargo
+            WHERE j.id_jefe_inmediato = ? AND u.estado_onboarding = ?
+            ORDER BY u.nombre
+            '''
+            query_result = await db.prepare(query).bind(int(cargo_jefe), estado).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo empleados del equipo: {str(e)}")
+
+    employees: list[dict] = []
+    for row in query_result.results:
+        employees.append(
+            {
+                "id": getattr(row, "id", None),
+                "nombre": getattr(row, "nombre", None),
+                "correo": getattr(row, "correo", None),
+                "cargo": getattr(row, "cargo", None),
+                "estado_onboarding": getattr(row, "estado_onboarding", None),
+                "nombre_cargo": getattr(row, "nombre_cargo", None),
+                "area": getattr(row, "area", None),
+            }
+        )
+
+    return employees
+
+
 @router.get("/solicitudes-asignadas", response_model=list[OnboardingResponse])
 async def list_assigned_onboarding_requests(
     req: Request,
