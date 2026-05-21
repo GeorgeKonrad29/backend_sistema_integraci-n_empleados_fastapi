@@ -85,7 +85,7 @@ async def get_current_user(
     try:
         user = (
             await db.prepare(
-                "SELECT id, correo, rol, nombre, cargo FROM USUARIO WHERE id = ? LIMIT 1"
+                "SELECT id, correo, rol, nombre, cargo, estado_onboarding FROM USUARIO WHERE id = ? LIMIT 1"
             )
             .bind(user_id)
             .first()
@@ -104,6 +104,7 @@ async def get_current_user(
             "rol": user.rol,
             "nombre": user.nombre,
             "cargo": user.cargo,
+            "estado_onboarding": getattr(user, "estado_onboarding", None),
         },
     }
 
